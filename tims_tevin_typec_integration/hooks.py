@@ -1,10 +1,10 @@
 app_name = "tims_tevin_typec_integration"
 app_title = "TIMS Tevic Type-C Integration"
 app_publisher = "Navari Ltd"
-app_description = "ERPNext integration between KRA\'s TIMS and Tevin Type-C TIMS device"
+app_description = "ERPNext integration between KRA's TIMS and Tevin Type-C TIMS device"
 app_email = "solutions@navari.co.ke"
 app_license = "agpl-3.0"
-# required_apps = []
+required_apps = ["frappe/erpnext"]
 
 # Includes in <head>
 # ------------------
@@ -28,7 +28,9 @@ app_license = "agpl-3.0"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+    "Sales Invoice": "tims_tevic_type_c_integration/overrides/client/sales_invoice.js"
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -122,13 +124,16 @@ app_license = "agpl-3.0"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    # "*": {
+    # 	"on_update": "method",
+    # 	"on_cancel": "method",
+    # 	"on_trash": "method"
+    # }
+    "Sales Invoice": {
+        "on_submit": "tims_tevin_typec_integration.tims_tevic_type_c_integration.overrides.server.sales_invoice.on_submit"
+    }
+}
 
 # Scheduled Tasks
 # ---------------
@@ -226,4 +231,3 @@ app_license = "agpl-3.0"
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
-

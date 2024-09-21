@@ -1,0 +1,72 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2024-09-20 14:24:41.006213",
+ "description": "Settings doctype for TIMS Tevin Type-C device",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "sender_id",
+  "column_break_atws",
+  "server_address"
+ ],
+ "fields": [
+  {
+   "fieldname": "sender_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sender ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_atws",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "This is the address of the TIMS Device. Format: hostname:port",
+   "fieldname": "server_address",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Server Address",
+   "reqd": 1
+  },
+  {
+   "description": "This is the company associated with this TIMS Setting.",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-20 14:39:33.095187",
+ "modified_by": "Administrator",
+ "module": "TIMS Tevic Type-C Integration",
+ "name": "TIMS Settings",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
