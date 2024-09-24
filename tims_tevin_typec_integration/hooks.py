@@ -6,6 +6,23 @@ app_email = "solutions@navari.co.ke"
 app_license = "agpl-3.0"
 required_apps = ["frappe/erpnext"]
 
+# Fixtures
+# --------
+fixtures = [
+    {
+        "doctype": "Custom Field",
+        "filters": [
+            [
+                "dt",
+                "in",
+                ("Sales Invoice", "Tax Category"),
+            ],
+            ["is_system_generated", "=", 0],
+            ["module", "=", app_title],
+        ],
+    },
+]
+
 # Includes in <head>
 # ------------------
 
