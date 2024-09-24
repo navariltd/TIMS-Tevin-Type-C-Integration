@@ -1,12 +1,15 @@
 import re
 
+import requests
 
 import frappe
+from frappe.integrations.utils import create_request_log
 from frappe.model.document import Document
 from erpnext.controllers.taxes_and_totals import get_itemised_tax_breakup_data
 
 
 def on_submit(doc: Document, method: str | None = None) -> None:
+    # TODO: Handle exemptions
     # Create the payload generation functionality here
     company = frappe.defaults.get_user_default("Company")
 
@@ -28,26 +31,43 @@ def on_submit(doc: Document, method: str | None = None) -> None:
         hs_code = frappe.db.get_value(
             "Tax Category", {"name": doc.tax_category}, ["custom_hs_code"]
         )
-        item_taxes = get_itemised_tax_breakup_data(doc)
 
         item_details = []
-        for item in doc.items:
-            tax_details = list(
-                filter(lambda i: i["item"] == item.item_code, item_taxes)
-            )[0]
+        if doc.tax_category == "Exempt":
+            for item in doc.items:
+                item_details.append(
+                    {
+                        "HSDesc": item.description,
+                        "TaxRate": 0,
+                        "ItemAmount": abs(item.net_amount),
+                        "TaxAmount": 0,
+                        "TransactionType": "1",
+                        "UnitPrice": item.base_rate,
+                        "HSCode": hs_code,
+                        "Quantity": abs(item.qty),
+                    }
+                )
 
-            item_details.append(
-                {
-                    "HSDesc": item.description,
-                    "TaxRate": tax_details["VAT"]["tax_rate"],
-                    "ItemAmount": abs(tax_details["taxable_amount"]),
-                    "TaxAmount": abs(tax_details["VAT"]["tax_amount"]),
-                    "TransactionType": "1",
-                    "UnitPrice": item.base_rate,
-                    "HSCode": hs_code,
-                    "Quantity": abs(item.qty),
-                }
-            )
+        else:
+            item_taxes = get_itemised_tax_breakup_data(doc)
+
+            for item in doc.items:
+                tax_details = list(
+                    filter(lambda i: i["item"] == item.item_code, item_taxes)
+                )[0]
+
+                item_details.append(
+                    {
+                        "HSDesc": item.description,
+                        "TaxRate": tax_details["VAT"]["tax_rate"],
+                        "ItemAmount": abs(tax_details["taxable_amount"]),
+                        "TaxAmount": abs(tax_details["VAT"]["tax_amount"]),
+                        "TransactionType": "1",
+                        "UnitPrice": item.base_rate,
+                        "HSCode": hs_code,
+                        "Quantity": abs(item.qty),
+                    }
+                )
 
         payload = {
             "Invoice": {
@@ -69,18 +89,34 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 "InvoiceType": "Original",
                 "TotalInvoiceAmount": abs(doc.grand_total),
                 "TotalTaxableAmount": abs(doc.total),
-                "TotalTaxAmount": abs(doc.total_taxes_and_charges),
+                "TotalTaxAmount": (
+                    abs(doc.total_taxes_and_charges)
+                    if doc.tax_category != "Exempt"
+                    else 0
+                ),
                 "ExemptionNumber": "",
                 "ItemDetails": item_details,
             }
         }
 
-        # response = requests.post(url=setting, json=payload, timeout=300)
+        # Create Integration Request log
+        integration_request = create_request_log(
+            data=payload,
+            is_remote_request=True,
+            service_name="TIMS",
+            request_headers=None,
+            url=setting.server_address,
+            reference_docname=doc.name,
+            reference_doctype="Sales Invoice",
+        )
 
-        # if response:
-        #     print(response.status_code, response)
+        # ! Confirm address before making request to not post to live
+        response = requests.post(url=setting.server_address, json=payload, timeout=300)
 
-    frappe.throw(f"Testing Exception: {payload}")
+        if response:
+            print(response.status_code, response)
+
+        frappe.throw(f"Testing Exception: {payload}")
 
 
 def is_valid_kra_pin(pin: str) -> bool:
