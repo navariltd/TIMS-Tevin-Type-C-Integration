@@ -1,5 +1,8 @@
 import re
+from base64 import b64encode
+from typing import Literal
 
+import qrcode
 import requests
 
 import frappe
@@ -69,10 +72,11 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                     }
                 )
 
+        trader_invoice_no = "".join(doc.name.split("-")[2:])
         payload = {
             "Invoice": {
                 "SenderId": setting.sender_id,
-                "TraderSystemInvoiceNumber": doc.name,
+                "TraderSystemInvoiceNumber": trader_invoice_no,
                 "InvoiceCategory": invoice_category,
                 "InvoiceTimestamp": f"{doc.posting_date}T{doc.posting_time.split('.', 1)[0]}",
                 "RelevantInvoiceNumber": (
@@ -100,23 +104,25 @@ def on_submit(doc: Document, method: str | None = None) -> None:
         }
 
         # Create Integration Request log
+        url = f"{setting.server_address}/invoice"
         integration_request = create_request_log(
             data=payload,
             is_remote_request=True,
             service_name="TIMS",
             request_headers=None,
-            url=setting.server_address,
+            url=url,
             reference_docname=doc.name,
             reference_doctype="Sales Invoice",
         )
 
-        # ! Confirm address before making request to not post to live
-        response = requests.post(url=setting.server_address, json=payload, timeout=300)
-
-        if response:
-            print(response.status_code, response)
-
-        frappe.throw(f"Testing Exception: {payload}")
+        frappe.enqueue(
+            make_tims_request,
+            is_async=True,
+            url=url,
+            queue="default",
+            payload=payload,
+            integration_request=integration_request.name,
+        )
 
 
 def is_valid_kra_pin(pin: str) -> bool:
@@ -132,3 +138,104 @@ def is_valid_kra_pin(pin: str) -> bool:
     """
     pattern = r"^[a-zA-Z]{1}[0-9]{9}[a-zA-Z]{1}$"
     return bool(re.match(pattern, pin))
+
+
+def update_integration_request(
+    integration_request: str,
+    status: Literal["Completed", "Failed"],
+    output: str | None = None,
+    error: str | None = None,
+) -> None:
+    """Updates the given integration request record
+
+    Args:
+        integration_request (str): The provided integration request
+        status (Literal[&quot;Completed&quot;, &quot;Failed&quot;]): The new status of the request
+        output (str | None, optional): The response message, if any. Defaults to None.
+        error (str | None, optional): The error message, if any. Defaults to None.
+    """
+    doc = frappe.get_doc("Integration Request", integration_request, for_update=True)
+    doc.status = status
+    doc.error = error
+    doc.output = output
+
+    doc.save(ignore_permissions=True)
+
+
+def make_tims_request(
+    url: str,
+    payload: dict | None = None,
+    timeout: int | float = 300,
+    integration_request: str | None = None,
+) -> None:
+    try:
+        response = requests.post(url=url, json=payload, timeout=timeout)
+        response.raise_for_status()  # Raise exception if HTTPError or any other exception is raised
+
+        invoice_info = response.json()["Invoice"]
+        invoice = invoice_info["TraderSystemInvoiceNumber"]
+
+        # Update Integration Request Log
+        update_integration_request(integration_request, "Completed", invoice_info)
+
+        # Update Sales Invoice record
+        qr_code = get_qr_code(invoice["QRCode"])
+        frappe.db.set_value(
+            "Sales Invoice",
+            invoice,
+            {
+                "custom_cu_invoice_number": invoice["ControlCode"],
+                "custom_qr_code": qr_code,
+            },
+        )
+
+    except (
+        requests.exceptions.ConnectionError,
+        requests.exceptions.ConnectTimeout,
+    ) as error:
+        # TODO: Create notifications if any exception/error
+        frappe.throw(
+            "Exception Encountered. Please check the Error Log for more information"
+        )
+
+    except requests.exceptions.HTTPError as error:
+        # TODO: Create notifications if any exception/error
+        message = f"{error.response.status_code}\n\n{error.response.text}"
+        update_integration_request(integration_request, "Failed", error=message)
+
+
+def get_qr_code(data: str) -> str:
+    """Generate QR Code data
+
+    Args:
+        data (str): The information used to generate the QR Code
+
+    Returns:
+        str: The QR Code.
+    """
+    qr_code_bytes = get_qr_code_bytes(data, format="PNG")
+    base_64_string = bytes_to_base64_string(qr_code_bytes)
+
+    return add_file_info(base_64_string)
+
+
+def add_file_info(data: str) -> str:
+    """Add info about the file type and encoding.
+
+    This is required so the browser can make sense of the data."""
+    return f"data:image/png;base64, {data}"
+
+
+def get_qr_code_bytes(data: bytes | str, format: str = "PNG") -> bytes:
+    """Create a QR code and return the bytes."""
+    img = qrcode.make(data)
+
+    buffered = BytesIO()
+    img.save(buffered, format=format)
+
+    return buffered.getvalue()
+
+
+def bytes_to_base64_string(data: bytes) -> str:
+    """Convert bytes to a base64 encoded string."""
+    return b64encode(data).decode("utf-8")
