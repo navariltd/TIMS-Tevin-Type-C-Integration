@@ -1,0 +1,31 @@
+{
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"Failed\"",
+  "creation": "2024-09-24 15:57:06.089224",
+  "days_in_advance": 0,
+  "docstatus": 0,
+  "doctype": "Notification",
+  "document_type": "Integration Request",
+  "enabled": 1,
+  "event": "Value Change",
+  "idx": 0,
+  "is_standard": 1,
+  "message": "I am writing to inform you that the remote request we initiated to {{ doc.url }} has failed.\n\nDetails of the Request:\n    Request Type: POST\n    Endpoint URL: {{ doc.url }}\n    Request Parameters: {{ doc.data }}\n    Response Message: {{ doc.error }}\n    Timestamp: {{ doc.created_on }}\n    \nLink: <a href=\"{{frappe.utils.get_url_to_form(doc.doctype, doc.name)}}\">{{doc.name}}</a>.\n\nRegards.",
+  "message_type": "HTML",
+  "modified": "2024-09-24 16:04:17.051601",
+  "modified_by": "Administrator",
+  "module": "TIMS Tevic Type-C Integration",
+  "name": "Notify of Failed TIMS Requests",
+  "owner": "Administrator",
+  "recipients": [
+    {
+      "receiver_by_document_field": "owner",
+      "receiver_by_role": "TIMS Administrator"
+    }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "subject": "Alert: Failure Status Returned from Remote TIMS Request - Action Required",
+  "value_changed": "status"
+}

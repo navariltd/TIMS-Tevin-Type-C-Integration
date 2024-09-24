@@ -1,0 +1,12 @@
+I am writing to inform you that the remote request we initiated to {{ doc.url }} has failed.
+
+Details of the Request:
+    Request Type: POST
+    Endpoint URL: {{ doc.url }}
+    Request Parameters: {{ doc.data }}
+    Response Message: {{ doc.error }}
+    Timestamp: {{ doc.created_on }}
+    
+Link: <a href="{{frappe.utils.get_url_to_form(doc.doctype, doc.name)}}">{{doc.name}}</a>.
+
+Regards.

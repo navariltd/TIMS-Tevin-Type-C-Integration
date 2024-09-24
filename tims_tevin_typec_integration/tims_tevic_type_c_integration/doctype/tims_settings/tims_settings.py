@@ -9,10 +9,8 @@ class TIMSSettings(Document):
 
     def validate(self) -> None:
         if self.server_address:
-            if not self.server_address.startswith(
-                "http"
-            ) or not self.server_address.startswith("https"):
-                # WARNING: Prepend http for now as
+            if not self.server_address.startswith("http"):
+                # WARNING: Prepend http for now as hostname is IP address
                 self.server_address = f"http://{self.server_address}"
 
             if not self.server_address.endswith("/api"):

@@ -194,9 +194,7 @@ def make_tims_request(
         requests.exceptions.ConnectTimeout,
     ) as error:
         # TODO: Create notifications if any exception/error
-        frappe.throw(
-            "Exception Encountered. Please check the Error Log for more information"
-        )
+        frappe.throw(f"{error}")
 
     except requests.exceptions.HTTPError as error:
         # TODO: Create notifications if any exception/error
