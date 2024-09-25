@@ -93,7 +93,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                     }
                 )
 
-        trader_invoice_no = "".join(doc.name.split("-")[2:])
+        trader_invoice_no = doc.name.split("-", 2)[-1]
         payload = {
             "Invoice": {
                 "SenderId": setting.sender_id,
