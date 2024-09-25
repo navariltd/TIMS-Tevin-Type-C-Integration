@@ -36,6 +36,26 @@ def on_submit(doc: Document, method: str | None = None) -> None:
             "Tax Category", {"name": doc.tax_category}, ["custom_hs_code"]
         )
 
+        relevant_invoice_number = ""
+        if doc.is_return:
+            # If this is a Credit Note
+            if not doc.return_against:
+                # If it's a standalone Credit Note
+                if not doc.custom_relevant_invoice_number:
+                    frappe.throw(
+                        "Please enter the CU Number in the <b>Relevant Invoice Number</b> field"
+                    )
+
+                relevant_invoice_number = doc.custom_relevant_invoice_number
+
+            else:
+                # If this isn't a standalone Credit Note
+                relevant_invoice_number = frappe.db.get_value(
+                    "Sales Invoice",
+                    {"name": doc.return_against},
+                    ["custom_cu_invoice_number"],
+                )
+
         item_details = []
         if doc.tax_category == "Exempt":
             for item in doc.items:
@@ -80,15 +100,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 "TraderSystemInvoiceNumber": trader_invoice_no,
                 "InvoiceCategory": invoice_category,
                 "InvoiceTimestamp": f"{doc.posting_date}T{doc.posting_time.split('.', 1)[0]}",
-                "RelevantInvoiceNumber": (
-                    frappe.db.get_value(
-                        "Sales Invoice",
-                        {"name": doc.return_against},
-                        ["custom_cu_invoice_number"],
-                    )
-                    if doc.is_return
-                    else ""
-                ),
+                "RelevantInvoiceNumber": relevant_invoice_number,
                 "PINOfBuyer": doc.tax_id,
                 "Discount": 0,
                 "InvoiceType": "Original",
@@ -118,11 +130,12 @@ def on_submit(doc: Document, method: str | None = None) -> None:
 
         frappe.enqueue(
             make_tims_request,
-            is_async=True,
             url=url,
-            queue="default",
             payload=payload,
             integration_request=integration_request.name,
+            queue="default",
+            is_async=True,
+            timeout=65,
         )
 
 
@@ -156,9 +169,9 @@ def update_integration_request(
         error (str | None, optional): The error message, if any. Defaults to None.
     """
     doc = frappe.get_doc("Integration Request", integration_request, for_update=True)
-    doc.status = status
-    doc.error = error
-    doc.output = output
+    doc.status = str(status)
+    doc.error = str(error)
+    doc.output = str(output)
 
     doc.save(ignore_permissions=True)
 
@@ -166,7 +179,7 @@ def update_integration_request(
 def make_tims_request(
     url: str,
     payload: dict | None = None,
-    timeout: int | float = 300,
+    timeout: int | float = 60,
     integration_request: str | None = None,
 ) -> None:
     try:
@@ -180,14 +193,16 @@ def make_tims_request(
         update_integration_request(integration_request, "Completed", invoice_info)
 
         # Update Sales Invoice record
-        qr_code = get_qr_code(invoice["QRCode"])
+        qr_code = get_qr_code(invoice_info["QRCode"])
+        # TODO: Figure out an elegant strategy to handle the Invoice number
         frappe.db.set_value(
             "Sales Invoice",
-            invoice,
+            f"ACC-SINV-{invoice[:4]}-{invoice[4:9]}",
             {
-                "custom_cu_invoice_number": invoice["ControlCode"],
+                "custom_cu_invoice_number": invoice_info["ControlCode"],
                 "custom_qr_code": qr_code,
             },
+            update_modified=True,
         )
 
     except (
