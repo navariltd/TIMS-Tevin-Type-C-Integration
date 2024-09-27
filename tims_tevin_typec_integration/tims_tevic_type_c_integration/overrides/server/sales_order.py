@@ -25,10 +25,10 @@ def on_submit(doc: Document, method: str | None = None) -> None:
             cost_approval = apply_workflow(doc, "Send for Cost Approval")
 
             if cost_approval:
-                apply_workflow(doc, "Approved")
+                apply_workflow(doc, "Approve")
 
         else:
-            apply_workflow(doc, "Approved")
+            apply_workflow(doc, "Approve")
 
     else:
         if doc.custom_cost_validation_status == "FAIL":
