@@ -18,7 +18,7 @@ def validate(doc: Document, method: str | None = None) -> None:
 
 
 def on_submit(doc: Document, method: str | None = None) -> None:
-    if doc.custom_cost_validation == "FAIL":
+    if doc.custom_cost_validation_status == "FAIL":
         cost_approval = apply_workflow(doc, "Send for Cost Approval")
 
         if (
