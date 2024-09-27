@@ -101,7 +101,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 "InvoiceCategory": invoice_category,
                 "InvoiceTimestamp": f"{doc.posting_date}T{doc.posting_time.split('.', 1)[0]}",
                 "RelevantInvoiceNumber": relevant_invoice_number,
-                "PINOfBuyer": doc.tax_id,
+                "PINOfBuyer": doc.tax_id or "",
                 "Discount": 0,
                 "InvoiceType": "Original",
                 "TotalInvoiceAmount": abs(doc.grand_total),

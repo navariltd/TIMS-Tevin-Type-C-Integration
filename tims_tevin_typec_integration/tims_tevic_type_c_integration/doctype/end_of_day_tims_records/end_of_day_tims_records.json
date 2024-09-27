@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "autoname": "field:end_of_day_id",
+ "creation": "2024-09-27 14:00:53.732824",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "end_of_day_id",
+  "section_break_pwtt",
+  "date_of_summary",
+  "first_invoice_number",
+  "total_invoice_amount",
+  "total_tax_amount",
+  "column_break_fnks",
+  "transmission_timestamp",
+  "last_invoice_number",
+  "total_taxable_amount",
+  "number_of_invoices_sent"
+ ],
+ "fields": [
+  {
+   "fieldname": "end_of_day_id",
+   "fieldtype": "Data",
+   "label": "End of Day ID",
+   "unique": 1
+  },
+  {
+   "fieldname": "section_break_pwtt",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "date_of_summary",
+   "fieldtype": "Date",
+   "label": "Date of Summary"
+  },
+  {
+   "fieldname": "first_invoice_number",
+   "fieldtype": "Int",
+   "label": "First Invoice Number",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "total_invoice_amount",
+   "fieldtype": "Float",
+   "label": "Total Invoice Amount for the Day",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "total_tax_amount",
+   "fieldtype": "Float",
+   "label": "Total Tax Amount for the Day",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_fnks",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "transmission_timestamp",
+   "fieldtype": "Data",
+   "label": "Transmission Timestamp"
+  },
+  {
+   "fieldname": "last_invoice_number",
+   "fieldtype": "Int",
+   "label": "Last Invoice Number",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "total_taxable_amount",
+   "fieldtype": "Float",
+   "label": "Total Taxable Amount for the Day",
+   "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "number_of_invoices_sent",
+   "fieldtype": "Int",
+   "label": "Number of Invoices Sent",
+   "non_negative": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-27 14:07:54.217095",
+ "modified_by": "Administrator",
+ "module": "TIMS Tevic Type-C Integration",
+ "name": "End Of Day TIMS Records",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

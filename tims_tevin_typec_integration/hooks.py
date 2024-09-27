@@ -159,23 +159,14 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"tims_tevin_typec_integration.tasks.all"
-# 	],
-# 	"daily": [
-# 		"tims_tevin_typec_integration.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"tims_tevin_typec_integration.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"tims_tevin_typec_integration.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"tims_tevin_typec_integration.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+    "all": [
+        "tims_tevin_typec_integration.tims_tevic_type_c_integration.tasks.tasks.resend_invoices"
+    ],
+    "daily": [
+        "tims_tevin_typec_integration.tims_tevic_type_c_integration.tasks.tasks.get_eod_records"
+    ],
+}
 
 # Testing
 # -------
