@@ -149,7 +149,11 @@ doc_events = {
     # }
     "Sales Invoice": {
         "on_submit": "tims_tevin_typec_integration.tims_tevic_type_c_integration.overrides.server.sales_invoice.on_submit"
-    }
+    },
+    "Sales Order": {
+        "after_insert": "tims_tevin_typec_integration.tims_tevic_type_c_integration.overrides.server.sales_order.on_submit",
+        "validate": "tims_tevin_typec_integration.tims_tevic_type_c_integration.overrides.server.sales_order.validate",
+    },
 }
 
 # Scheduled Tasks
