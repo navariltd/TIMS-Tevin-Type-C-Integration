@@ -15,7 +15,7 @@ fixtures = [
             [
                 "dt",
                 "in",
-                ("Sales Invoice", "Tax Category"),
+                ("Sales Invoice", "Tax Category", "Sales Order"),
             ],
             ["is_system_generated", "=", 0],
             ["module", "=", app_title],
