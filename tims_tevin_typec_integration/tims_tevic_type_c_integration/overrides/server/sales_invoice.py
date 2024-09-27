@@ -35,9 +35,25 @@ def on_submit(doc: Document, method: str | None = None) -> None:
         hs_code = frappe.db.get_value(
             "Tax Category", {"name": doc.tax_category}, ["custom_hs_code"]
         )
+        tax_rule = frappe.db.get_value(
+            "Tax Rule",
+            {"tax_category": doc.tax_category, "tax_type": "Sales"},
+            ["sales_tax_template"],
+            as_dict=True,
+        )
+        tax_rate = frappe.db.get_value(
+            "Sales Taxes and Charges",
+            {
+                "parent": tax_rule.sales_tax_template,
+                "parenttype": "Sales Taxes and Charges Template",
+            },
+            ["rate"],
+        )
 
-        if doc.tax_category != "Vatable" and not hs_code:
-            frappe.throw("Please contact the Account Controller to set the HSCode")
+        if tax_rate != 0 and not hs_code:
+            frappe.throw(
+                "Please contact the Account Controller to ensure the HSCode for this customer's Tax Category is set"
+            )
 
         relevant_invoice_number = ""
         if doc.is_return:
@@ -60,7 +76,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 )
 
         item_details = []
-        if doc.tax_category == "Exempt":
+        if tax_rate == 0:
             for item in doc.items:
                 item_details.append(
                     {
