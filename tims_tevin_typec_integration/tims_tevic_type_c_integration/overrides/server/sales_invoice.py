@@ -36,6 +36,9 @@ def on_submit(doc: Document, method: str | None = None) -> None:
             "Tax Category", {"name": doc.tax_category}, ["custom_hs_code"]
         )
 
+        if doc.tax_category != "Vatable" and not hs_code:
+            frappe.throw("Please contact the Account Controller to set the HSCode")
+
         relevant_invoice_number = ""
         if doc.is_return:
             # If this is a Credit Note
