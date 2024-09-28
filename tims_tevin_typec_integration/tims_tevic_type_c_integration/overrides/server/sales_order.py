@@ -22,23 +22,72 @@ def validate(doc: Document, method: str | None = None) -> None:
 def on_submit(doc: Document, method: str | None = None) -> None:
     if doc.custom_sales_type == "Cash":
         if doc.custom_cost_validation_status == "FAIL":
-            frappe.errprint(f"Cost approval Cash Sale: {doc.workflow_state}")
-            apply_workflow(doc, "Send for Cost Approval")
+            cost_approval = apply_workflow(doc, "Send for Cost Approval")
+
+            if cost_approval.workflow_state == "Cost Approved":
+                final_approval = apply_workflow(doc, "Approve")
+
+                if (
+                    final_approval.workflow_state == "Approved"
+                    and final_approval.docstatus != 1
+                ):
+                    final_approval.submit()
+
+        else:
+            cost_approval = apply_workflow(doc, "Approve")
+
+            if (
+                cost_approval.workflow_state == "Approved"
+                and cost_approval.docstatus != 1
+            ):
+                cost_approval.submit()
 
     else:
         # If this is a Credit Sale
         if doc.custom_cost_validation_status == "FAIL":
             # If cost validation failed
-            frappe.errprint(f"Cost approval Credit Sale: {doc.workflow_state}")
             cost_approval = apply_workflow(doc, "Send for Cost Approval")
 
             if cost_approval.workflow_state == "Cost Approved":
                 if cost_approval.custom_credit_check == "FAIL":
                     # If cost approval was approved and credit check is failed
-                    frappe.errprint(
-                        f"Credit approval Credit Sale: {cost_approval.workflow_state}"
+                    credit_approval = apply_workflow(
+                        cost_approval, "Request Credit Limit Approval"
                     )
-                    apply_workflow(cost_approval, "Request Credit Limit Approval")
+
+                    if (
+                        credit_approval.workflow_state == "Approved"
+                        and credit_approval.docstatus != 1
+                    ):
+                        credit_approval.submit()
+
+                else:
+                    final_approval = apply_workflow(cost_approval, "Approve")
+
+                    if (
+                        final_approval.workflow_state == "Approved"
+                        and final_approval.docstatus != 1
+                    ):
+                        final_approval.submit()
+
+        else:
+            if doc.custom_credit_check == "FAIL":
+                credit_approval = apply_workflow(doc, "Request Credit Limit Approval")
+
+                if (
+                    credit_approval.workflow_state == "Approved"
+                    and credit_approval.docstatus != 1
+                ):
+                    credit_approval.submit()
+
+            else:
+                final_approval = apply_workflow(doc, "Approve")
+
+                if (
+                    final_approval.workflow_state == "Approved"
+                    and final_approval.docstatus != 1
+                ):
+                    final_approval.submit()
 
 
 def check_credit_limit(
