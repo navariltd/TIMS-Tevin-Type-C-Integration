@@ -127,7 +127,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 "Discount": 0,
                 "InvoiceType": "Original",
                 "TotalInvoiceAmount": abs(doc.grand_total),
-                "TotalTaxableAmount": abs(doc.total),
+                "TotalTaxableAmount": abs(doc.net_total),
                 "TotalTaxAmount": (
                     abs(doc.total_taxes_and_charges)
                     if doc.tax_category != "Exempt"
