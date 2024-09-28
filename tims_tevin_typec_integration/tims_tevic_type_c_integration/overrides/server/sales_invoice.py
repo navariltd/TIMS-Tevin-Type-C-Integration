@@ -50,7 +50,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
             ["rate"],
         )
 
-        if tax_rate != 0 and not hs_code:
+        if tax_rate == 0 and not hs_code:
             frappe.throw(
                 "Please contact the Account Controller to ensure the HSCode for this customer's Tax Category is set"
             )
