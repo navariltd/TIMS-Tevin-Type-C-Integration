@@ -9,11 +9,13 @@ import requests
 import frappe
 from frappe.integrations.utils import create_request_log
 from frappe.model.document import Document
+from frappe.utils import get_formatted_email
+from frappe.utils.user import get_users_with_role
 from erpnext.controllers.taxes_and_totals import get_itemised_tax_breakup_data
 
 
 def on_submit(doc: Document, method: str | None = None) -> None:
-    # TODO: Handle exemptions
+    # TODO: Correctly pick Tax Head from Sales Taxes and Charges Template. Ensure HSCode in vata
     # Create the payload generation functionality here
     company = frappe.defaults.get_user_default("Company")
 
@@ -93,6 +95,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
 
         else:
             item_taxes = get_itemised_tax_breakup_data(doc)
+            tax_head = doc.taxes[0].description
 
             for item in doc.items:
                 tax_details = list(
@@ -102,12 +105,12 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 item_details.append(
                     {
                         "HSDesc": item.description,
-                        "TaxRate": tax_details["VAT"]["tax_rate"],
+                        "TaxRate": tax_details[tax_head]["tax_rate"],
                         "ItemAmount": abs(tax_details["taxable_amount"]),
-                        "TaxAmount": abs(tax_details["VAT"]["tax_amount"]),
+                        "TaxAmount": abs(tax_details[tax_head]["tax_amount"]),
                         "TransactionType": "1",
                         "UnitPrice": item.base_rate,
-                        "HSCode": hs_code,
+                        "HSCode": "",
                         "Quantity": abs(item.qty),
                     }
                 )
@@ -272,3 +275,10 @@ def get_qr_code_bytes(data: bytes | str, format: str = "PNG") -> bytes:
 def bytes_to_base64_string(data: bytes) -> str:
     """Convert bytes to a base64 encoded string."""
     return b64encode(data).decode("utf-8")
+
+
+def notify_users(role: str) -> None:
+    users = get_users_with_role("System Manager")
+    relevant_users = [
+        get_formatted_email(user).replace("<", "(").replace(">", ")") for user in users
+    ]
