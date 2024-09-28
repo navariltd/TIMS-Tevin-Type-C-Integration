@@ -25,7 +25,9 @@ def on_submit(doc: Document, method: str | None = None) -> None:
             cost_approval = apply_workflow(doc, "Send for Cost Approval")
 
             if cost_approval.workflow_state == "Cost Approved":
-                final_approval = apply_workflow(doc, "Approve")
+                final_approval = apply_workflow(
+                    doc, "Submit"
+                )  # TODO: Next action should be Submit
 
                 if (
                     final_approval.workflow_state == "Approved"
@@ -34,6 +36,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                     final_approval.submit()
 
         else:
+            # If cost validation passed
             cost_approval = apply_workflow(doc, "Approve")
 
             if (
@@ -95,7 +98,7 @@ def check_credit_limit(
 ):
     credit_limit = get_credit_limit(customer, company)
     if not credit_limit:
-        return
+        return True
 
     customer_outstanding = get_customer_outstanding(
         customer, company, ignore_outstanding_sales_order
