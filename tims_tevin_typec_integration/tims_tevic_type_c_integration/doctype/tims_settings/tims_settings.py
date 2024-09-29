@@ -25,7 +25,7 @@ class TIMSSettings(Document):
             if self.flush_email_frequency:
                 flush_emails_task: Document = frappe.get_doc(
                     "Scheduled Job Type",
-                    {"method": ["like", f"%{flush.__name__}%"]},
+                    {"method": ["like", f"%email%{flush.__name__}%"]},
                     ["name", "method", "frequency", "cron_format"],
                     for_update=True,
                 )
