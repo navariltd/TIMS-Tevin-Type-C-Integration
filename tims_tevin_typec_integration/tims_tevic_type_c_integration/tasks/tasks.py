@@ -8,7 +8,7 @@ from ..overrides.server.sales_invoice import on_submit, update_integration_reque
 
 def resend_invoices() -> None:
     # Fetch all invoices with no CU Invoice number and QR code value, that are submitted
-    query = f"""
+    query = """
     SELECT name
     FROM `tabSales Invoice`
     WHERE custom_cu_invoice_number IS NULL
