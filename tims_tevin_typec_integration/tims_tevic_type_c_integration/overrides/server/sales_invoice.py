@@ -15,7 +15,6 @@ from erpnext.controllers.taxes_and_totals import get_itemised_tax_breakup_data
 
 
 def on_submit(doc: Document, method: str | None = None) -> None:
-    # TODO: Correctly pick Tax Head from Sales Taxes and Charges Template. Ensure HSCode in vata
     # Create the payload generation functionality here
     company = frappe.defaults.get_user_default("Company")
 
@@ -213,11 +212,12 @@ def make_tims_request(
         try:
             invoice_info = response.json()["Invoice"]
         except KeyError as error:
+            # If duplicate record was sent
             invoice_info = response.json()["Existing"]
         invoice = invoice_info["TraderSystemInvoiceNumber"]
 
         # Update Integration Request Log
-        update_integration_request(integration_request, "Completed", invoice_info)
+        update_integration_request(integration_request, "Completed", response.json())
 
         # Update Sales Invoice record
         qr_code = get_qr_code(invoice_info["QRCode"])

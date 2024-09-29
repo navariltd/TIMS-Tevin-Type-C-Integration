@@ -3,11 +3,24 @@ import requests
 import frappe
 from frappe.integrations.utils import create_request_log
 
-from ..overrides.server.sales_invoice import update_integration_request
+from ..overrides.server.sales_invoice import on_submit, update_integration_request
 
 
 def resend_invoices() -> None:
-    print("Resending Invoices")
+    # Fetch all invoices with no CU Invoice number and QR code value, that are submitted
+    query = f"""
+    SELECT name
+    FROM `tabSales Invoice`
+    WHERE custom_cu_invoice_number IS NULL
+        AND custom_qr_code IS NULL
+        AND docstatus = 1;
+    """
+    invoices = frappe.db.sql(query, as_dict=True)
+
+    for invoice in invoices:
+        doc = frappe.get_doc("Sales Invoice", invoice.name)
+
+        on_submit(doc)
 
 
 def get_eod_records() -> None:
