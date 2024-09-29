@@ -232,12 +232,14 @@ def make_tims_request(
         requests.exceptions.ConnectTimeout,
     ) as error:
         # TODO: Create notifications if any exception/error
+        notify_users("System Manager", integration_request)
         frappe.throw(f"{error}")
 
     except requests.exceptions.HTTPError as error:
         # TODO: Create notifications if any exception/error
         message = f"{error.response.status_code}\n\n{error.response.text}"
         update_integration_request(integration_request, "Failed", error=message)
+        notify_users("System Manager", integration_request)
 
 
 def get_qr_code(data: str) -> str:
@@ -277,8 +279,17 @@ def bytes_to_base64_string(data: bytes) -> str:
     return b64encode(data).decode("utf-8")
 
 
-def notify_users(role: str) -> None:
-    users = get_users_with_role("System Manager")
-    relevant_users = [
+def notify_users(role: str, integration_request: str) -> None:
+    users = get_users_with_role(role)
+    recipients = [
         get_formatted_email(user).replace("<", "(").replace(">", ")") for user in users
     ]
+
+    frappe.sendmail(
+        recipients,
+        subject="TIMS Error",
+        message=f"An Error has been logged for TIMS Integration under integration Request: {integration_request}",
+        reference_doctype="Integration Request",
+        reference_name=integration_request,
+        delayed=False,
+    )
