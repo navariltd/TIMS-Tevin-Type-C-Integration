@@ -1,7 +1,11 @@
 # Copyright (c) 2024, Navari Ltd and contributors
 # For license information, please see license.txt
 
+import frappe
+from frappe.email.queue import flush
 from frappe.model.document import Document
+
+from ...tasks.tasks import get_eod_records
 
 
 class TIMSSettings(Document):
@@ -15,3 +19,36 @@ class TIMSSettings(Document):
 
             if not self.server_address.endswith("/api"):
                 self.server_address = f"{self.server_address}/api"
+
+    def on_update(self) -> None:
+        if self.has_value_changed("flush_email_frequency"):
+            if self.flush_email_frequency:
+                flush_emails_task: Document = frappe.get_doc(
+                    "Scheduled Job Type",
+                    {"method": ["like", f"%{flush.__name__}%"]},
+                    ["name", "method", "frequency", "cron_format"],
+                    for_update=True,
+                )
+
+                flush_emails_task.frequency = self.flush_email_frequency
+
+                if self.flush_email_frequency == "Cron":
+                    flush_emails_task.cron_format = self.flush_email_cron
+
+                flush_emails_task.save()
+
+        if self.has_value_changed("eod_fetch_frequency"):
+            if self.eod_fetch_frequency:
+                eod_fetch_task: Document = frappe.get_doc(
+                    "Scheduled Job Type",
+                    {"method": ["like", f"%{get_eod_records.__name__}%"]},
+                    ["name", "method", "frequency", "cron_format"],
+                    for_update=True,
+                )
+
+                eod_fetch_task.frequency = self.eod_fetch_frequency
+
+                if self.eod_fetch_frequency == "Cron":
+                    eod_fetch_task.cron_format = self.eod_cron
+
+                eod_fetch_task.save()

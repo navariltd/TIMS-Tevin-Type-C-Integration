@@ -7,12 +7,19 @@
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
+    "credentials_tab",
     "company",
     "sender_id",
     "column_break_atws",
     "server_address",
     "cusn",
-    "branch_id"
+    "branch_id",
+    "miscellaneous_tab",
+    "eod_fetch_frequency",
+    "eod_cron",
+    "column_break_gwof",
+    "flush_email_frequency",
+    "flush_email_cron"
   ],
   "fields": [
     {
@@ -57,11 +64,53 @@
       "fieldtype": "Data",
       "label": "Branch ID",
       "unique": 1
+    },
+    {
+      "fieldname": "credentials_tab",
+      "fieldtype": "Tab Break",
+      "label": "Credentials"
+    },
+    {
+      "fieldname": "miscellaneous_tab",
+      "fieldtype": "Tab Break",
+      "label": "Miscellaneous"
+    },
+    {
+      "default": "Daily",
+      "fieldname": "eod_fetch_frequency",
+      "fieldtype": "Select",
+      "label": "EOD Fetch Frequency",
+      "options": "\nDaily\nCron"
+    },
+    {
+      "depends_on": "eval:(doc.eod_fetch_frequency === \"Cron\");",
+      "fieldname": "eod_cron",
+      "fieldtype": "Data",
+      "label": "EOD Fetch Cron Expression",
+      "mandatory_depends_on": "eval:(doc.eod_fetch_frequency === \"Cron\");"
+    },
+    {
+      "fieldname": "column_break_gwof",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "All",
+      "fieldname": "flush_email_frequency",
+      "fieldtype": "Select",
+      "label": "Flush Email Frequency",
+      "options": "\nAll\nHourly\nCron"
+    },
+    {
+      "depends_on": "eval:(doc.flush_email_frequency === \"Cron\");",
+      "fieldname": "flush_email_cron",
+      "fieldtype": "Data",
+      "label": "Flussh Email Cron Expression",
+      "mandatory_depends_on": "eval:(doc.flush_email_frequency === \"Cron\");"
     }
   ],
   "index_web_pages_for_search": 1,
   "links": [],
-  "modified": "2024-09-25 10:39:37.492920",
+  "modified": "2024-09-29 07:53:18.438794",
   "modified_by": "Administrator",
   "module": "TIMS Tevic Type-C Integration",
   "name": "TIMS Settings",
