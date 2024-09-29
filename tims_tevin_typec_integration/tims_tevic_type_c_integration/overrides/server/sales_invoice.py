@@ -210,7 +210,10 @@ def make_tims_request(
         response = requests.post(url=url, json=payload, timeout=timeout)
         response.raise_for_status()  # Raise exception if HTTPError or any other exception is raised
 
-        invoice_info = response.json()["Invoice"]
+        try:
+            invoice_info = response.json()["Invoice"]
+        except KeyError as error:
+            invoice_info = response.json()["Existing"]
         invoice = invoice_info["TraderSystemInvoiceNumber"]
 
         # Update Integration Request Log
