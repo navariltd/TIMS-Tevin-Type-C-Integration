@@ -79,6 +79,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
 
         item_details = []
         if tax_rate == 0:
+            # Exempt customers
             for item in doc.items:
                 item_details.append(
                     {
@@ -94,6 +95,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 )
 
         else:
+            # Vatable customers
             item_taxes = get_itemised_tax_breakup_data(doc)
             tax_head = doc.taxes[0].description
 
