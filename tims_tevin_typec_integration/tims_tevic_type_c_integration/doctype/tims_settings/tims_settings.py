@@ -5,7 +5,7 @@ import frappe
 from frappe.email.queue import flush
 from frappe.model.document import Document
 
-from ...tasks.tasks import get_eod_records
+from ...tasks.tasks import get_eod_records, resend_invoices
 
 
 class TIMSSettings(Document):
@@ -52,3 +52,19 @@ class TIMSSettings(Document):
                     eod_fetch_task.cron_format = self.eod_cron
 
                 eod_fetch_task.save()
+
+        if self.has_value_changed("resend_invoices_frequency"):
+            if self.resend_invoices_frequency:
+                resend_invoices_task: Document = frappe.get_doc(
+                    "Scheduled Job Type",
+                    {"method": ["like", f"%{resend_invoices.__name__}%"]},
+                    ["name", "method", "frequency", "cron_format"],
+                    for_update=True,
+                )
+
+                resend_invoices_task.frequency = self.resend_invoices_frequency
+
+                if self.resend_invoices_frequency == "Cron":
+                    resend_invoices_task.cron_format = self.resend_invoices_cron
+
+                resend_invoices_task.save()
