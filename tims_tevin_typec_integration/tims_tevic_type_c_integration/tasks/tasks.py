@@ -3,7 +3,11 @@ import requests
 import frappe
 from frappe.integrations.utils import create_request_log
 
-from ..overrides.server.sales_invoice import on_submit, update_integration_request
+from ..overrides.server.sales_invoice import (
+    notify_users,
+    on_submit,
+    update_integration_request,
+)
 
 
 def resend_invoices() -> None:
@@ -77,10 +81,11 @@ def make_tims_get_request(url: str, integration_request: str) -> None:
     except (
         requests.exceptions.ConnectionError,
         requests.exceptions.ConnectTimeout,
+        frappe.exceptions.DuplicateEntryError,
     ) as error:
-        # TODO: Create notifications if any exception/error
+        notify_users("System Manager", integration_request)
         frappe.throw(f"{error}")
     except requests.exceptions.HTTPError as error:
-        # TODO: Create notifications if any exception/error
+        notify_users("System Manager", integration_request)
         message = f"{error.response.status_code}\n\n{error.response.text}"
         update_integration_request(integration_request, "Failed", error=message)
