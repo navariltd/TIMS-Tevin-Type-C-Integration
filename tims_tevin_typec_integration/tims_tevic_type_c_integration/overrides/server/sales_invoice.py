@@ -117,12 +117,17 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 )
 
         trader_invoice_no = doc.name.split("-", 2)[-1]
+        try:
+            posting_time = doc.posting_time.split(".", 1)[0]
+        except AttributeError:
+            posting_time = doc.posting_time.strftime("%H:%m:%s")
+
         payload = {
             "Invoice": {
                 "SenderId": setting.sender_id,
                 "TraderSystemInvoiceNumber": trader_invoice_no,
                 "InvoiceCategory": invoice_category,
-                "InvoiceTimestamp": f"{doc.posting_date}T{doc.posting_time.split('.', 1)[0]}",
+                "InvoiceTimestamp": f"{doc.posting_date}T{posting_time}",
                 "RelevantInvoiceNumber": relevant_invoice_number,
                 "PINOfBuyer": doc.tax_id or "",
                 "Discount": 0,
