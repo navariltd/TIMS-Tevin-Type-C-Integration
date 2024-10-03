@@ -20,7 +20,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
 
     setting = frappe.db.get_value(
         "TIMS Settings",
-        {"company": company},
+        {"company": company, "is_active": 1},
         ["server_address", "sender_id"],
         as_dict=True,
     )

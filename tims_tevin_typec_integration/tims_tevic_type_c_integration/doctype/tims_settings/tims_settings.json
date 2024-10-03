@@ -10,10 +10,11 @@
     "credentials_tab",
     "company",
     "sender_id",
+    "cusn",
     "column_break_atws",
     "server_address",
-    "cusn",
     "branch_id",
+    "is_active",
     "miscellaneous_tab",
     "background_jobs_configuration_section",
     "eod_fetch_frequency",
@@ -132,11 +133,17 @@
       "fieldname": "background_jobs_configuration_section",
       "fieldtype": "Section Break",
       "label": "Background Jobs Frequency Configuration"
+    },
+    {
+      "default": "1",
+      "fieldname": "is_active",
+      "fieldtype": "Check",
+      "label": "Is Active?"
     }
   ],
   "index_web_pages_for_search": 1,
   "links": [],
-  "modified": "2024-09-30 12:22:15.734088",
+  "modified": "2024-10-03 09:03:29.272396",
   "modified_by": "Administrator",
   "module": "TIMS Tevic Type-C Integration",
   "name": "TIMS Settings",
