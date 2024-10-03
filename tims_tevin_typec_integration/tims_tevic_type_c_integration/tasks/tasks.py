@@ -17,8 +17,9 @@ def resend_invoices() -> None:
     FROM `tabSales Invoice`
     WHERE custom_cu_invoice_number IS NULL
         AND custom_qr_code IS NULL
-        AND docstatus = 1;
-    """
+        AND docstatus = 1
+        AND name LIKE 'ACC-SINV-%'
+   """  #! Last condition is a hack. Needs to be changed
     invoices = frappe.db.sql(query, as_dict=True)
 
     for invoice in invoices:
