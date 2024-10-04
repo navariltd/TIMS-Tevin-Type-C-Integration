@@ -125,6 +125,11 @@ def on_submit(doc: Document, method: str | None = None) -> None:
             # If it's a timedelta object
             posting_time = str(doc.posting_time).split(".", 1)[0]
 
+        if doc.customer == "CASH CUSTOMER CONTROL":
+            pin = doc.custom_cash_customer_kra_pin or ""
+        else:
+            pin = doc.tax_id or ""
+
         payload = {
             "Invoice": {
                 "SenderId": setting.sender_id,
@@ -132,7 +137,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 "InvoiceCategory": invoice_category,
                 "InvoiceTimestamp": f"{doc.posting_date}T{posting_time}",
                 "RelevantInvoiceNumber": relevant_invoice_number,
-                "PINOfBuyer": doc.tax_id or "",
+                "PINOfBuyer": pin,
                 "Discount": 0,
                 "InvoiceType": "Original",
                 "TotalInvoiceAmount": abs(doc.grand_total),
