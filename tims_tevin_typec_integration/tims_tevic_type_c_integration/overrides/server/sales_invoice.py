@@ -1,5 +1,6 @@
 import re
 from base64 import b64encode
+from datetime import timedelta
 from io import BytesIO
 from typing import Literal
 
@@ -116,11 +117,13 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                     }
                 )
 
-        trader_invoice_no = doc.name.split("-", 2)[-1]
-        try:
+        trader_invoice_no = doc.name.split("-", 1)[-1]
+        if isinstance(doc.posting_time, str):
+            # If it's a string
             posting_time = doc.posting_time.split(".", 1)[0]
-        except AttributeError:
-            posting_time = doc.posting_time.strftime("%H:%m:%s")
+        elif isinstance(doc.posting_time, timedelta):
+            # If it's a timedelta object
+            posting_time = str(doc.posting_time).split(".", 1)[0]
 
         payload = {
             "Invoice": {
@@ -226,10 +229,9 @@ def make_tims_request(
 
         # Update Sales Invoice record
         qr_code = get_qr_code(invoice_info["QRCode"])
-        # TODO: Figure out an elegant strategy to handle the Invoice number
         frappe.db.set_value(
             "Sales Invoice",
-            f"ACC-SINV-{invoice[:4]}-{invoice[4:9]}",
+            f"INV-{invoice}",
             {
                 "custom_cu_invoice_number": invoice_info["ControlCode"],
                 "custom_qr_code": qr_code,
