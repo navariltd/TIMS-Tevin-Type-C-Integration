@@ -23,19 +23,25 @@ def validate(doc: Document, method: str | None = None) -> None:
 
 
 def check_credit_limit(
-    customer, company, ignore_outstanding_sales_order=False, extra_amount=0
-):
+    customer: str,
+    company: str,
+    ignore_outstanding_sales_order: bool = False,
+    extra_amount: int = 0,
+) -> bool:
+    """Perform Credit Limit check on customer.
+    Checks credit limit and outstanding balance to determine credit status.
+    """
     credit_limit = get_credit_limit(customer, company)
-    if not credit_limit:
-        return True
-
     customer_outstanding = get_customer_outstanding(
         customer, company, ignore_outstanding_sales_order
     )
+
     if extra_amount > 0:
         customer_outstanding += flt(extra_amount)
 
-    if credit_limit > 0 and flt(customer_outstanding) > credit_limit:
-        return False
+    # Case: If no Credit Limit, test if outstanding amount is present
+    if not credit_limit:
+        return customer_outstanding == 0
 
-    return True
+    # Case: If Credit Limit, test if outstanding amount is present
+    return customer_outstanding == 0 and customer_outstanding <= credit_limit
