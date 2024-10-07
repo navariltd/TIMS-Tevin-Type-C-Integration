@@ -17,7 +17,7 @@ def validate(doc: Document, method: str | None = None) -> None:
             "PASS" if check_credit_limit(doc.customer, company) else "FAIL"
         )
 
-        # Update Outstanding Limit and Credit Limit custom fields of sales order
+        # Update Outstanding Limit and Credit Limit custom fields of Sales Order
         doc.custom_outstanding_balance = get_customer_outstanding(doc.customer, company)
         doc.custom_credit_limit = get_credit_limit(doc.customer, company)
 

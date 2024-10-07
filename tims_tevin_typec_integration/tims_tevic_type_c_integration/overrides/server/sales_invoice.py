@@ -14,11 +14,15 @@ from frappe.utils import get_formatted_email
 from frappe.utils.user import get_users_with_role
 from erpnext.controllers.taxes_and_totals import get_itemised_tax_breakup_data
 
+CASH_CUSTOMER_CONTROL = "CASH CUSTOMER CONTROL"
+
 
 def on_submit(doc: Document, method: str | None = None) -> None:
-    # Create the payload generation functionality here
+    """Submit hook for Sales Invoice that submits tax information to TIMS device"""
     company = frappe.defaults.get_user_default("Company")
 
+    # Fetch active setting tied to current company
+    # TODO: tie in additional filters to allow fine-grained searching of setting[s]
     setting = frappe.db.get_value(
         "TIMS Settings",
         {"company": company, "is_active": 1},
@@ -28,15 +32,19 @@ def on_submit(doc: Document, method: str | None = None) -> None:
 
     if setting:
         if doc.tax_id and not is_valid_kra_pin(doc.tax_id):
-            # Validate KRA PIN if provided
+            # Validate KRA PIN if provided and raise exception if invalid
             frappe.throw(
                 f"The entered PIN: <b>{doc.tax_id}</b>, is not valid. Please review this."
             )
 
         invoice_category = "Credit Note" if doc.is_return else "Tax Invoice"
+
+        # HS Codes are mapped in the Tax Category doctype.
+        # NOTE: VATABLE tax category never has an HS Code
         hs_code = frappe.db.get_value(
             "Tax Category", {"name": doc.tax_category}, ["custom_hs_code"]
         )
+        # Use the Sales Tax Template to determine the Tax Rate
         tax_rule = frappe.db.get_value(
             "Tax Rule",
             {"tax_category": doc.tax_category, "tax_type": "Sales"},
@@ -53,15 +61,16 @@ def on_submit(doc: Document, method: str | None = None) -> None:
         )
 
         if tax_rate == 0 and not hs_code:
+            # Ensure only Tax Rate 16% can have an empty HS Code. Otherwise, if no HS Code, raise error
             frappe.throw(
-                "Please contact the Account Controller to ensure the HSCode for this customer's Tax Category is set"
+                "Please contact the <b>Account Controller</b> to ensure the HSCode for this customer's Tax Category is set"
             )
 
         relevant_invoice_number = ""
         if doc.is_return:
             # If this is a Credit Note
             if not doc.return_against:
-                # If it's a standalone Credit Note
+                # If it's a standalone Credit Note, prompt user to Enter CU Invoice No.
                 if not doc.custom_relevant_invoice_number:
                     frappe.throw(
                         "Please enter the CU Number in the <b>Relevant Invoice Number</b> field"
@@ -70,16 +79,16 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 relevant_invoice_number = doc.custom_relevant_invoice_number
 
             else:
-                # If this isn't a standalone Credit Note
+                # If this isn't a standalone Credit Note, fetch CU invoice number
                 relevant_invoice_number = frappe.db.get_value(
                     "Sales Invoice",
                     {"name": doc.return_against},
                     ["custom_cu_invoice_number"],
                 )
 
-        item_details = []
+        item_details = []  # ItemDetails list
         if tax_rate == 0:
-            # Exempt customers
+            # Exempt customers: TaxRate: 0, TaxAmount: 0, and HSCode can't be empty
             for item in doc.items:
                 item_details.append(
                     {
@@ -96,7 +105,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
 
         else:
             # Vatable customers
-            item_taxes = get_itemised_tax_breakup_data(doc)
+            item_taxes = get_itemised_tax_breakup_data(doc)  # Get Taxation breakdown
             tax_head = doc.taxes[0].description
 
             for item in doc.items:
@@ -117,7 +126,9 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                     }
                 )
 
-        trader_invoice_no = doc.name.split("-", 1)[-1]
+        trader_invoice_no = doc.name.split("-", 1)[
+            -1
+        ]  # Get numbers portion of name, i.e. INV-123456 > 123456
         if isinstance(doc.posting_time, str):
             # If it's a string
             posting_time = doc.posting_time.split(".", 1)[0]
@@ -125,7 +136,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
             # If it's a timedelta object
             posting_time = str(doc.posting_time).split(".", 1)[0]
 
-        if doc.customer == "CASH CUSTOMER CONTROL":
+        if doc.customer == CASH_CUSTOMER_CONTROL:
             pin = doc.custom_cash_customer_kra_pin or ""
         else:
             pin = doc.tax_id or ""
@@ -249,6 +260,7 @@ def make_tims_request(
         requests.exceptions.ConnectTimeout,
     ) as error:
         notify_users("System Manager", integration_request)
+        update_integration_request(integration_request, "Failed", error=error)
         frappe.throw(f"{error}")
 
     except requests.exceptions.HTTPError as error:
@@ -295,6 +307,15 @@ def bytes_to_base64_string(data: bytes) -> str:
 
 
 def notify_users(role: str, integration_request: str) -> None:
+    """Notify users with provided role of the failed integration request
+
+    Args:
+        role (str): The role to alert users on
+        integration_request (str): The integration request to alert users of
+
+    Returns:
+        None
+    """
     users = get_users_with_role(role)
     recipients = [
         get_formatted_email(user).replace("<", "(").replace(">", ")") for user in users
