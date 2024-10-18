@@ -127,15 +127,17 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 )
 
         trader_invoice_no = doc.name.split("-", 1)[
-            -1
-        ]  # Get numbers portion of name, i.e. INV-123456 > 123456
+            -1]
+        
+        # Get numbers portion of name, i.e. INV-123456 > 123456
+        # trader_invoice_no = doc.custom_delivery_note_no if doc.custom_delivery_note_no else doc.name.split("-", 1)[-1]
         if isinstance(doc.posting_time, str):
             # If it's a string
             posting_time = doc.posting_time.split(".", 1)[0]
         elif isinstance(doc.posting_time, timedelta):
             # If it's a timedelta object
             posting_time = str(doc.posting_time).split(".", 1)[0]
-
+        posting_time_=format_time_for_invoice(posting_time)
         if doc.customer == CASH_CUSTOMER_CONTROL:
             pin = doc.custom_cash_customer_kra_pin or ""
         else:
@@ -146,7 +148,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 "SenderId": setting.sender_id,
                 "TraderSystemInvoiceNumber": trader_invoice_no,
                 "InvoiceCategory": invoice_category,
-                "InvoiceTimestamp": f"{doc.posting_date}T{posting_time}",
+                "InvoiceTimestamp": f"{doc.posting_date}T{posting_time_}",
                 "RelevantInvoiceNumber": relevant_invoice_number,
                 "PINOfBuyer": pin,
                 "Discount": 0,
@@ -329,3 +331,8 @@ def notify_users(role: str, integration_request: str) -> None:
         reference_name=integration_request,
         delayed=False,
     )
+
+def format_time_for_invoice(time: str) -> str:
+    """Format time to ensure leading zero for single-digit hours."""
+    hour, minute, second = time.split(":")
+    return f"{int(hour):02d}:{minute}:{second}"
