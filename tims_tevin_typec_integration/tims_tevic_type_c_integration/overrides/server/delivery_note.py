@@ -24,3 +24,7 @@ def items_tax_fields(doc):
 def before_save(doc, method=None):
     calculate_tax(doc)
     
+def before_save_sales_invoice(doc, method=None):
+    if doc.is_return==1:
+        calculate_tax(doc)
+    
