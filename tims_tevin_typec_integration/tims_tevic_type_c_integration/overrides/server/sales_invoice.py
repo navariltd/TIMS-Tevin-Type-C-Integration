@@ -115,8 +115,8 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                     {
                         "HSDesc": item.description,
                         "TaxRate": item.custom_tax_rate,
-                        "ItemAmount": item.net_amount,
-                        "TaxAmount": item.custom_tax_amount, 
+                        "ItemAmount": abs(item.net_amount),
+                        "TaxAmount": abs(item.custom_tax_amount), 
                         "TransactionType": "1",
                         "UnitPrice": item.net_rate, 
                         "HSCode": "",
