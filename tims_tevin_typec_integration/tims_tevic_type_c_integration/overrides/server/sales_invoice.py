@@ -123,10 +123,10 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                         "Quantity": abs(item.qty),
                     }
                 )
-        trader_invoice_no = doc.name.split("-", 1)[
-            -1]
+        # trader_invoice_no = doc.name.split("-", 1)[
+        #     -1]
         # Get numbers portion of name, i.e. INV-123456 > 123456
-        # trader_invoice_no = doc.custom_delivery_note_no if doc.custom_delivery_note_no else doc.name.split("-", 1)[-1]
+        trader_invoice_no = doc.custom_delivery_note_no if doc.custom_delivery_note_no else doc.name.split("-", 1)[-1]
         if isinstance(doc.posting_time, str):
             # If it's a string
             posting_time = doc.posting_time.split(".", 1)[0]
