@@ -120,10 +120,11 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                         "Quantity": abs(item.qty),
                     }
                 )
-        # trader_invoice_no = doc.name.split("-", 1)[
-        #     -1]
+        trader_invoice_no = doc.name.split("-", 1)[
+            -1]
         # Get numbers portion of name, i.e. INV-123456 > 123456
-        trader_invoice_no = doc.custom_delivery_note_no if doc.custom_delivery_note_no else doc.name.split("-", 1)[-1]
+        '''If you decide to go with the custom_delivery_note_no field, uncomment the code below'''
+        # trader_invoice_no = doc.custom_delivery_note_no if doc.custom_delivery_note_no else doc.name.split("-", 1)[-1]
         if isinstance(doc.posting_time, str):
             # If it's a string
             posting_time = doc.posting_time.split(".", 1)[0]
@@ -250,6 +251,17 @@ def make_tims_request(
             },
             update_modified=True,
         )
+        '''If you decide to go with the custom_delivery_note_no field, uncomment the code below'''
+        # invoice_name=frappe.db.get_value("Sales Invoice",{"custom_delivery_note_no":invoice},"name")
+        # frappe.db.set_value(
+        #     "Sales Invoice",
+        #     invoice_name,
+        #     {
+        #         "custom_cu_invoice_number": invoice_info["ControlCode"],
+        #         "custom_qr_code": qr_code,
+        #     },
+        #     update_modified=True,
+        # )
 
     except (
         requests.exceptions.ConnectionError,
