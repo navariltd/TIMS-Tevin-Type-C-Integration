@@ -242,9 +242,23 @@ def make_tims_request(
         # Update Sales Invoice record
         qr_code = get_qr_code(invoice_info["QRCode"])
         
+        # frappe.db.set_value(
+        #     "Sales Invoice",
+        #     f"INV-{invoice}",
+        #     {
+        #         "custom_cu_invoice_number": invoice_info["ControlCode"],
+        #         "custom_qr_code": qr_code,
+        #     },
+        #     update_modified=True,
+        # )
+        # invoice_info = payload.get("Invoice", {}) 
+        '''Change the prefix to CN- if the invoice is a credit note'''
+        invoice_prefix = "CN-" if invoice_info["InvoiceCategory"] == "Credit Note" else "INV-"
+        invoice_number = f"{invoice_prefix}{invoice}"
+
         frappe.db.set_value(
             "Sales Invoice",
-            f"INV-{invoice}",
+            invoice_number,
             {
                 "custom_cu_invoice_number": invoice_info["ControlCode"],
                 "custom_qr_code": qr_code,
@@ -342,4 +356,3 @@ def format_time_for_invoice(time: str) -> str:
     """Format time to ensure leading zero for single-digit hours."""
     hour, minute, second = time.split(":")
     return f"{int(hour):02d}:{minute}:{second}"
-
