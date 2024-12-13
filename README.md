@@ -11,7 +11,8 @@ TIMS Tevic Type C app enhances business operations by ensuring compliance with K
 
 -   **Purchase the Type C Middleware for Accounting**  
     The middleware is essential for this integration and can be obtained from [Tevic](https://tevin.eu/type-c-middleware/).
-    
+    ![Screenshot from 2024-12-13 12-26-37](https://github.com/user-attachments/assets/fdee247a-90ca-4b14-b028-834e83dfd35f)
+
 -   **API Server Details**  
     Ensure you have the API server link and senderID provided by Tevic upon purchasing the middleware(Both fir sandbox and production).
     
@@ -19,6 +20,7 @@ TIMS Tevic Type C app enhances business operations by ensuring compliance with K
 ----------
 
 ### **Configuration**
+![image](https://github.com/user-attachments/assets/d5c862c8-3ab8-46d0-b33a-51dc49725fc9)
 
 1.  **Setup TIMS Settings in ERPNext**  
     Navigate to the **TIMS Settings** doctype in ERPNext and fill out the following fields:
@@ -39,7 +41,12 @@ TIMS Tevic Type C app enhances business operations by ensuring compliance with K
     
     -   When an invoice is **submitted** in ERPNext, the system automatically sends its details to Tevic.
     -   The payload (invoice data) and headers are prepared according to Tevic's requirements.
+      ![image (2)](https://github.com/user-attachments/assets/2e2e61fd-2f44-4481-a078-46f4f461248e)
+
+    -   Successful response will create cu number and QR code on the invoice
 2.  **Integration Request Doctype**
+   ![image (1)](https://github.com/user-attachments/assets/fe3df703-b38e-4e1b-aa21-629f55b08d10)
+
     -   Upon submission, the transaction is recorded in the **Integration Request** doctype:
         -   **Status**: Initially set to "Queue."
         -   **Response**: If successful, the status changes to "Completed," and the response includes:
@@ -47,7 +54,7 @@ TIMS Tevic Type C app enhances business operations by ensuring compliance with K
             -   CU Number
         -   These details are stored on the respective invoice, and a QR code is generated.
         -   The QR code will appear on the invoice printout provided to the customer.
-3.  **Credit Notes**
+4.  **Credit Notes**
     
     -   The same process applies when submitting a credit note. The details are sent to Tevic, and the response is recorded.
 
@@ -86,6 +93,67 @@ Once an invoice is successfully submitted:
 ----------
 
 This setup ensures smooth and compliant submission of invoices and credit notes to Tevic, maintaining real-time communication with KRA.
+
+#### Manual/Self-Hosted Installation
+
+1. [Install bench](https://github.com/frappe/bench)
+
+  
+
+2. [Install ERPNext](https://github.com/frappe/erpnext#installation)
+
+    
+
+3. Once bench and ERPNext are installed, add Tevic Type C app to your bench by running:
+
+  
+```sh
+
+
+$  bench  get-app  --branch  {branch-name}  https://github.com/navariltd/TIMS-Tevin-Type-C-Integration.git
+
+```
+
+
+Replace `{branch-name}` with the desired branch name from the repository. Ensure compatibility with your installed versions of Frappe and ERPNext.
+
+
+4. Install the tims-tevin-typec-integration app on your site by running:
+
+
+```sh
+
+$  bench  --site  {sitename}  install-app  tims_tevic_typec_integration
+
+```
+
+Replace `{sitename}` with the name of your site.
+
+  
+
+#### Frappe Cloud Installation
+
+- Sign up with Frappe Cloud.
+
+- Setup a [bench](https://frappecloud.com/docs/benches/create-new).
+
+- Create a new site.
+
+- Choose Frappe Version-15 or above, and select ERPNext, and TIMS Tevic Type-C Integration from the available Apps to Install.
+
+- Within minutes, the site will be up and running with a fresh install, ready to explore the app's simple and impressive features.
+
+  
+
+If assistance is needed to get started, reach out for consultation and support from: [Navari](https://navari.co.ke/).
+
+  
+
+### Troubleshooting
+
+- If you encounter any errors during installation, refer to the error messages for guidance.
+
+- Ensure all dependencies are correctly installed and compatible with the versions specified.
 
 #### License
 
