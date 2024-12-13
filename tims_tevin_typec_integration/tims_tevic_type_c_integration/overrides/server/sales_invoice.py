@@ -170,7 +170,6 @@ def on_submit(doc: Document, method: str | None = None) -> None:
             reference_docname=doc.name,
             reference_doctype="Sales Invoice",
         )
-
         frappe.enqueue(
             make_tims_request,
             url=url,
