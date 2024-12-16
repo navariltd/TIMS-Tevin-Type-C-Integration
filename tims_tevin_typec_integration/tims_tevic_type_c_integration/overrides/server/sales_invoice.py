@@ -85,6 +85,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                     {"name": doc.return_against},
                     ["custom_cu_invoice_number"],
                 )
+            validate_relevant_invoice_number(relevant_invoice_number)
 
         item_details = []  # ItemDetails list
        
@@ -355,3 +356,10 @@ def format_time_for_invoice(time: str) -> str:
     """Format time to ensure leading zero for single-digit hours."""
     hour, minute, second = time.split(":")
     return f"{int(hour):02d}:{minute}:{second}"
+
+def validate_relevant_invoice_number(relevant_invoice_number):
+    if len(relevant_invoice_number) != 19:
+        frappe.throw(
+            "The <b>Relevant Invoice Number</b> must be exactly 19 characters long and should be the CU number. Current length: {}.".format(len(relevant_invoice_number))
+        )
+
