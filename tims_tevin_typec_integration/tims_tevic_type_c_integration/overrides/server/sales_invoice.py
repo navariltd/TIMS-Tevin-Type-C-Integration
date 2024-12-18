@@ -6,7 +6,7 @@ from typing import Literal
 
 import qrcode
 import requests
-
+import json
 import frappe
 from frappe.integrations.utils import create_request_log
 from frappe.model.document import Document
@@ -363,3 +363,14 @@ def validate_relevant_invoice_number(relevant_invoice_number):
             "The <b>Relevant Invoice Number</b> must be exactly 19 characters long and should be the CU number. Current length: {}.".format(len(relevant_invoice_number))
         )
 
+@frappe.whitelist()
+def single_invoice_submission(doc):
+    doc_name = json.loads(doc).get("name")
+    doc = frappe.get_doc("Sales Invoice", doc_name)
+    on_submit(doc)
+    frappe.msgprint("TIMS submission successful")
+    
+    
+    
+    
+    
