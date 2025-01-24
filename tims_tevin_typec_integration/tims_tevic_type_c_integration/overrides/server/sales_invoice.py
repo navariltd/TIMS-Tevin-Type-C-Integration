@@ -21,7 +21,6 @@ def on_submit(doc: Document, method: str | None = None) -> None:
     """Submit hook for Sales Invoice that submits tax information to TIMS device"""
     company = frappe.defaults.get_user_default("Company")
 
-    # Fetch active setting tied to current company
     # TODO: tie in additional filters to allow fine-grained searching of setting[s]
     setting = frappe.db.get_value(
         "TIMS Settings",
@@ -94,7 +93,7 @@ def on_submit(doc: Document, method: str | None = None) -> None:
             for item in doc.items:
                 item_details.append(
                     {
-                        "HSDesc": item.description,
+                        "HSDesc": strip_html_tags(item.description),
                         "TaxRate": 0,
                         "ItemAmount": abs(item.net_amount),
                         "TaxAmount": 0,
@@ -195,6 +194,11 @@ def is_valid_kra_pin(pin: str) -> bool:
     """
     pattern = r"^[a-zA-Z]{1}[0-9]{9}[a-zA-Z]{1}$"
     return bool(re.match(pattern, pin))
+
+
+def strip_html_tags(text):
+    clean_text = re.sub(r'<[^>]*>', '', text)
+    return clean_text
 
 
 def update_integration_request(
