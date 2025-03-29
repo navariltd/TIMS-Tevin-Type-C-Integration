@@ -95,10 +95,10 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                     {
                         "HSDesc": strip_html_tags(item.description),
                         "TaxRate": 0,
-                        "ItemAmount": abs(item.net_amount),
+                        "ItemAmount": abs(item.base_net_amount),
                         "TaxAmount": 0,
                         "TransactionType": "1",
-                        "UnitPrice": item.net_rate,
+                        "UnitPrice": item.base_net_rate,
                         "HSCode": hs_code,
                         "Quantity": abs(item.qty),
                     }
@@ -112,10 +112,10 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                     {
                         "HSDesc": item.description,
                         "TaxRate": item.custom_tax_rate,
-                        "ItemAmount": abs(item.net_amount),
+                        "ItemAmount": abs(item.base_net_amount),
                         "TaxAmount": abs(item.custom_tax_amount), 
                         "TransactionType": "1",
-                        "UnitPrice": item.net_rate, 
+                        "UnitPrice": item.base_net_rate, 
                         "HSCode": "",
                         "Quantity": abs(item.qty),
                     }
@@ -147,10 +147,10 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 "PINOfBuyer": pin.strip(),
                 "Discount": 0,
                 "InvoiceType": "Original",
-                "TotalInvoiceAmount": abs(doc.grand_total),
-                "TotalTaxableAmount": abs(doc.net_total),
+                "TotalInvoiceAmount": abs(doc.base_grand_total),
+                "TotalTaxableAmount": abs(doc.base_net_total),
                 "TotalTaxAmount": (
-                    abs(doc.total_taxes_and_charges)
+                    abs(doc.base_total_taxes_and_charges)
                     if doc.tax_category != "Exempt"
                     else 0
                 ),
