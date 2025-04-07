@@ -16,163 +16,222 @@ from erpnext.controllers.taxes_and_totals import get_itemised_tax_breakup_data
 
 CASH_CUSTOMER_CONTROL = "CASH CUSTOMER CONTROL"
 
-
 def on_submit(doc: Document, method: str | None = None) -> None:
     """Submit hook for Sales Invoice that submits tax information to TIMS device"""
-    company = frappe.defaults.get_user_default("Company")
-    if doc.is_opening == "Yes":
+    if should_skip_submission(doc):
         return
     
-    # TODO: tie in additional filters to allow fine-grained searching of setting[s]
-    setting = frappe.db.get_value(
+    setting = get_tims_settings(doc)
+    if not setting:
+        return
+        
+    validate_tax_id(doc)
+    
+    invoice_category = get_invoice_category(doc)
+    hs_code, tax_rate = get_tax_details(doc)
+    validate_tax_exemption(doc, hs_code, tax_rate)
+    
+    relevant_invoice_number = get_relevant_invoice_number(doc)
+    item_details = build_item_details(doc, hs_code, tax_rate)
+    
+    payload = build_payload(doc, setting, invoice_category, relevant_invoice_number, item_details)
+    submit_to_tims(doc, setting, payload)
+
+
+def should_skip_submission(doc) -> bool:
+    """Check if submission should be skipped"""
+    company = frappe.defaults.get_user_default("Company")
+    if not company or doc.is_opening == "Yes":
+        return True
+    return False
+
+
+def get_tims_settings(doc) -> dict | None:
+    """Get TIMS settings for the company"""
+    company = frappe.defaults.get_user_default("Company")
+    return frappe.db.get_value(
         "TIMS Settings",
         {"company": company, "is_active": 1},
         ["server_address", "sender_id"],
         as_dict=True,
     )
+
+
+def validate_tax_id(doc) -> None:
+    """Validate the tax ID/KRA PIN if present"""
+    if doc.tax_id and not is_valid_kra_pin(doc.tax_id):
+        frappe.throw(
+            f"The entered PIN: <b>{doc.tax_id}</b>, is not valid. Please review this."
+        )
+
+
+def get_invoice_category(doc) -> str:
+    """Determine the invoice category"""
+    return "Credit Note" if doc.is_return else "Tax Invoice"
+
+
+def get_tax_details(doc) -> tuple:
+    """Get tax details (HS Code and tax rate) for the document"""
+    hs_code = frappe.db.get_value(
+        "Tax Category", {"name": doc.tax_category}, ["custom_hs_code"]
+    )
     
-    if setting:
-        if doc.tax_id and not is_valid_kra_pin(doc.tax_id):
-            frappe.throw(
-                f"The entered PIN: <b>{doc.tax_id}</b>, is not valid. Please review this."
-            )
+    tax_rule = frappe.db.get_value(
+        "Tax Rule",
+        {"tax_category": doc.tax_category, "tax_type": "Sales"},
+        ["sales_tax_template"],
+        as_dict=True,
+    )
+    
+    tax_rate = frappe.db.get_value(
+        "Sales Taxes and Charges",
+        {
+            "parent": tax_rule.sales_tax_template,
+            "parenttype": "Sales Taxes and Charges Template",
+        },
+        ["rate"],
+    )
+    
+    return hs_code, tax_rate
 
-        invoice_category = "Credit Note" if doc.is_return else "Tax Invoice"
 
-        # NOTE: VATABLE tax category never has an HS Code
-        hs_code = frappe.db.get_value(
-            "Tax Category", {"name": doc.tax_category}, ["custom_hs_code"]
+def validate_tax_exemption(doc, hs_code, tax_rate) -> None:
+    """Validate tax exemption requirements"""
+    if tax_rate == 0 and not hs_code:
+        frappe.throw(
+            "Please contact the <b>Account Controller</b> to ensure the HSCode for this customer's Tax Category is set"
         )
-        tax_rule = frappe.db.get_value(
-            "Tax Rule",
-            {"tax_category": doc.tax_category, "tax_type": "Sales"},
-            ["sales_tax_template"],
-            as_dict=True,
-        )
-        tax_rate = frappe.db.get_value(
-            "Sales Taxes and Charges",
-            {
-                "parent": tax_rule.sales_tax_template,
-                "parenttype": "Sales Taxes and Charges Template",
-            },
-            ["rate"],
-        )
 
-        if tax_rate == 0 and not hs_code:
-            frappe.throw(
-                "Please contact the <b>Account Controller</b> to ensure the HSCode for this customer's Tax Category is set"
-            )
 
-        relevant_invoice_number = ""
-        if doc.is_return:
-            if not doc.return_against:
-                if not doc.custom_relevant_invoice_number:
-                    frappe.throw(
-                        "Please enter the CU Number in the <b>Relevant Invoice Number</b> field"
-                    )
-
-                relevant_invoice_number = doc.custom_relevant_invoice_number
-
-            else:
-                relevant_invoice_number = frappe.db.get_value(
-                    "Sales Invoice",
-                    {"name": doc.return_against},
-                    ["custom_cu_invoice_number"],
+def get_relevant_invoice_number(doc) -> str:
+    """Get and validate the relevant invoice number for returns"""
+    relevant_invoice_number = ""
+    
+    if doc.is_return:
+        if not doc.return_against:
+            if not doc.custom_relevant_invoice_number:
+                frappe.throw(
+                    "Please enter the CU Number in the <b>Relevant Invoice Number</b> field"
                 )
-            validate_relevant_invoice_number(relevant_invoice_number)
-
-        item_details = []  # ItemDetails list
-       
-        if tax_rate == 0:
-            # Exempt customers: TaxRate: 0, TaxAmount: 0, and HSCode can't be empty
-            for item in doc.items:
-                item_details.append(
-                    {
-                        "HSDesc": strip_html_tags(item.description),
-                        "TaxRate": 0,
-                        "ItemAmount": abs(item.base_net_amount),
-                        "TaxAmount": 0,
-                        "TransactionType": "1",
-                        "UnitPrice": item.base_net_rate,
-                        "HSCode": hs_code,
-                        "Quantity": abs(item.qty),
-                    }
-                )
-
+            relevant_invoice_number = doc.custom_relevant_invoice_number
         else:
+            relevant_invoice_number = frappe.db.get_value(
+                "Sales Invoice",
+                {"name": doc.return_against},
+                ["custom_cu_invoice_number"],
+            )
+        validate_relevant_invoice_number(relevant_invoice_number)
+    
+    return relevant_invoice_number
 
-            for item in doc.items:
 
-                item_details.append(
-                    {
-                        "HSDesc": item.description,
-                        "TaxRate": item.custom_tax_rate,
-                        "ItemAmount": abs(item.base_net_amount),
-                        "TaxAmount": abs(item.custom_tax_amount), 
-                        "TransactionType": "1",
-                        "UnitPrice": item.base_net_rate, 
-                        "HSCode": "",
-                        "Quantity": abs(item.qty),
-                    }
-                )
-        trader_invoice_no = doc.name.split("-", 1)[
-            -1]
-        # Get numbers portion of name, i.e. INV-123456 > 123456
-        '''If you decide to go with the custom_delivery_note_no field, uncomment the code below'''
-        # trader_invoice_no = doc.custom_delivery_note_no if doc.custom_delivery_note_no else doc.name.split("-", 1)[-1]
-        if isinstance(doc.posting_time, str):
-            posting_time = doc.posting_time.split(".", 1)[0]
-        elif isinstance(doc.posting_time, timedelta):
-            posting_time = str(doc.posting_time).split(".", 1)[0]
-        posting_time_=format_time_for_invoice(posting_time)
-        if doc.customer == CASH_CUSTOMER_CONTROL:
-            pin = doc.custom_cash_customer_kra_pin or ""
-        else:
-            pin = doc.tax_id or ""
-
-        payload = {
-            "Invoice": {
-                "SenderId": setting.sender_id,
-                "TraderSystemInvoiceNumber": trader_invoice_no,
-                "InvoiceCategory": invoice_category,
-                "InvoiceTimestamp": f"{doc.posting_date}T{posting_time_}",
-                "RelevantInvoiceNumber": relevant_invoice_number,
-                "PINOfBuyer": pin.strip(),
-                "Discount": 0,
-                "InvoiceType": "Original",
-                "TotalInvoiceAmount": abs(doc.base_grand_total),
-                "TotalTaxableAmount": abs(doc.base_net_total),
-                "TotalTaxAmount": (
-                    abs(doc.base_total_taxes_and_charges)
-                    if doc.tax_category != "Exempt"
-                    else 0
-                ),
-                "ExemptionNumber": "",
-                "ItemDetails": item_details,
-            }
+def build_item_details(doc, hs_code, tax_rate) -> list[dict]:
+    """Build item details for the payload"""
+    item_details = []
+    
+    for item in doc.items:
+        item_data = {
+            "HSDesc": strip_html_tags(item.description),
+            "ItemAmount": abs(item.base_net_amount),
+            "TransactionType": "1",
+            "UnitPrice": item.base_net_rate,
+            "Quantity": abs(item.qty),
         }
-
-        # Create Integration Request log
-        url = f"{setting.server_address}/invoice"
-        integration_request = create_request_log(
-            data=payload,
-            is_remote_request=True,
-            service_name="TIMS",
-            request_headers=None,
-            url=url,
-            reference_docname=doc.name,
-            reference_doctype="Sales Invoice",
-        )
-        frappe.enqueue(
-            make_tims_request,
-            url=url,
-            payload=payload,
-            integration_request=integration_request.name,
-            queue="default",
-            is_async=True,
-            timeout=65,
-        )
         
+        if tax_rate == 0:
+            # Exempt customers
+            item_data.update({
+                "TaxRate": 0,
+                "TaxAmount": 0,
+                "HSCode": hs_code,
+            })
+        else:
+            item_data.update({
+                "TaxRate": item.custom_tax_rate,
+                "TaxAmount": abs(item.custom_tax_amount),
+                "HSCode": "",
+            })
+        
+        item_details.append(item_data)
+    
+    return item_details
+
+
+def get_trader_invoice_number(doc) -> str:
+    """Get the trader invoice number from document"""
+    return doc.name.split("-", 1)[-1]
+    # Alternative implementation if using custom_delivery_note_no:
+    # return doc.custom_delivery_note_no if doc.custom_delivery_note_no else doc.name.split("-", 1)[-1]
+
+
+def format_posting_time(posting_time) -> str:
+    """Format the posting time for the invoice"""
+    if isinstance(posting_time, str):
+        posting_time = posting_time.split(".", 1)[0]
+    elif isinstance(posting_time, timedelta):
+        posting_time = str(posting_time).split(".", 1)[0]
+    return format_time_for_invoice(posting_time)
+
+
+def get_buyer_pin(doc) -> str:
+    """Get the buyer's PIN/KRA tax ID"""
+    CASH_CUSTOMER_CONTROL = "Cash Customer"  # This should probably be a constant defined elsewhere
+    if doc.customer == CASH_CUSTOMER_CONTROL:
+        return doc.custom_cash_customer_kra_pin or ""
+    return doc.tax_id or ""
+
+
+def build_payload(doc, setting, invoice_category, relevant_invoice_number, item_details) -> dict:
+    """Build the payload for TIMS submission"""
+    trader_invoice_no = get_trader_invoice_number(doc)
+    posting_time = format_posting_time(doc.posting_time)
+    pin = get_buyer_pin(doc)
+    
+    return {
+        "Invoice": {
+            "SenderId": setting.sender_id,
+            "TraderSystemInvoiceNumber": trader_invoice_no,
+            "InvoiceCategory": invoice_category,
+            "InvoiceTimestamp": f"{doc.posting_date}T{posting_time}",
+            "RelevantInvoiceNumber": relevant_invoice_number,
+            "PINOfBuyer": pin.strip(),
+            "Discount": 0,
+            "InvoiceType": "Original",
+            "TotalInvoiceAmount": abs(doc.base_grand_total),
+            "TotalTaxableAmount": abs(doc.base_net_total),
+            "TotalTaxAmount": (
+                abs(doc.base_total_taxes_and_charges)
+                if doc.tax_category != "Exempt"
+                else 0
+            ),
+            "ExemptionNumber": "",
+            "ItemDetails": item_details,
+        }
+    }
+
+
+def submit_to_tims(doc, setting, payload) -> None:
+    """Submit the payload to TIMS"""
+    url = f"{setting.server_address}/invoice"
+    integration_request = create_request_log(
+        data=payload,
+        is_remote_request=True,
+        service_name="TIMS",
+        request_headers=None,
+        url=url,
+        reference_docname=doc.name,
+        reference_doctype="Sales Invoice",
+    )
+    
+    frappe.enqueue(
+        make_tims_request,
+        url=url,
+        payload=payload,
+        integration_request=integration_request.name,
+        queue="default",
+        is_async=True,
+        timeout=65,
+    )       
 
 def is_valid_kra_pin(pin: str) -> bool:
     """Checks if the string provided conforms to the pattern of a KRA PIN.
