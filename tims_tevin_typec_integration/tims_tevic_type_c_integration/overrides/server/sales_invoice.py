@@ -20,7 +20,9 @@ CASH_CUSTOMER_CONTROL = "CASH CUSTOMER CONTROL"
 def on_submit(doc: Document, method: str | None = None) -> None:
     """Submit hook for Sales Invoice that submits tax information to TIMS device"""
     company = frappe.defaults.get_user_default("Company")
-
+    if doc.is_opening == "Yes":
+        return
+    
     # TODO: tie in additional filters to allow fine-grained searching of setting[s]
     setting = frappe.db.get_value(
         "TIMS Settings",
@@ -31,19 +33,16 @@ def on_submit(doc: Document, method: str | None = None) -> None:
     
     if setting:
         if doc.tax_id and not is_valid_kra_pin(doc.tax_id):
-            # Validate KRA PIN if provided and raise exception if invalid
             frappe.throw(
                 f"The entered PIN: <b>{doc.tax_id}</b>, is not valid. Please review this."
             )
 
         invoice_category = "Credit Note" if doc.is_return else "Tax Invoice"
 
-        # HS Codes are mapped in the Tax Category doctype.
         # NOTE: VATABLE tax category never has an HS Code
         hs_code = frappe.db.get_value(
             "Tax Category", {"name": doc.tax_category}, ["custom_hs_code"]
         )
-        # Use the Sales Tax Template to determine the Tax Rate
         tax_rule = frappe.db.get_value(
             "Tax Rule",
             {"tax_category": doc.tax_category, "tax_type": "Sales"},
@@ -60,16 +59,13 @@ def on_submit(doc: Document, method: str | None = None) -> None:
         )
 
         if tax_rate == 0 and not hs_code:
-            # Ensure only Tax Rate 16% can have an empty HS Code. Otherwise, if no HS Code, raise error
             frappe.throw(
                 "Please contact the <b>Account Controller</b> to ensure the HSCode for this customer's Tax Category is set"
             )
 
         relevant_invoice_number = ""
         if doc.is_return:
-            # If this is a Credit Note
             if not doc.return_against:
-                # If it's a standalone Credit Note, prompt user to Enter CU Invoice No.
                 if not doc.custom_relevant_invoice_number:
                     frappe.throw(
                         "Please enter the CU Number in the <b>Relevant Invoice Number</b> field"
@@ -78,7 +74,6 @@ def on_submit(doc: Document, method: str | None = None) -> None:
                 relevant_invoice_number = doc.custom_relevant_invoice_number
 
             else:
-                # If this isn't a standalone Credit Note, fetch CU invoice number
                 relevant_invoice_number = frappe.db.get_value(
                     "Sales Invoice",
                     {"name": doc.return_against},
@@ -126,10 +121,8 @@ def on_submit(doc: Document, method: str | None = None) -> None:
         '''If you decide to go with the custom_delivery_note_no field, uncomment the code below'''
         # trader_invoice_no = doc.custom_delivery_note_no if doc.custom_delivery_note_no else doc.name.split("-", 1)[-1]
         if isinstance(doc.posting_time, str):
-            # If it's a string
             posting_time = doc.posting_time.split(".", 1)[0]
         elif isinstance(doc.posting_time, timedelta):
-            # If it's a timedelta object
             posting_time = str(doc.posting_time).split(".", 1)[0]
         posting_time_=format_time_for_invoice(posting_time)
         if doc.customer == CASH_CUSTOMER_CONTROL:
@@ -240,22 +233,10 @@ def make_tims_request(
             invoice_info = response.json()["Existing"]
         invoice = invoice_info["TraderSystemInvoiceNumber"]
 
-        # Update Integration Request Log
         update_integration_request(integration_request, "Completed", response.json())
 
-        # Update Sales Invoice record
         qr_code = get_qr_code(invoice_info["QRCode"])
         
-        # frappe.db.set_value(
-        #     "Sales Invoice",
-        #     f"INV-{invoice}",
-        #     {
-        #         "custom_cu_invoice_number": invoice_info["ControlCode"],
-        #         "custom_qr_code": qr_code,
-        #     },
-        #     update_modified=True,
-        # )
-        # invoice_info = payload.get("Invoice", {}) 
         '''Change the prefix to CN- if the invoice is a credit note'''
         invoice_prefix = "CN-" if invoice_info["InvoiceCategory"] == "Credit Note" else "INV-"
         invoice_number = f"{invoice_prefix}{invoice}"
@@ -373,8 +354,4 @@ def single_invoice_submission(doc):
     doc = frappe.get_doc("Sales Invoice", doc_name)
     on_submit(doc)
     frappe.msgprint("TIMS submission successful")
-    
-    
-    
-    
     
