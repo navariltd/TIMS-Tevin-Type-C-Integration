@@ -414,3 +414,5 @@ def single_invoice_submission(doc):
     on_submit(doc)
     frappe.msgprint("TIMS submission successful")
     
+    
+    
