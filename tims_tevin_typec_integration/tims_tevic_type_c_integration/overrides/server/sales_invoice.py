@@ -147,7 +147,6 @@ def build_item_details(doc, tax_rate) -> list[dict]:
             item_data.update({
                 "TaxRate": item.custom_tax_rate,
                 "TaxAmount": abs(item.custom_tax_amount),
-                "HSCode": "",
             })
         
         item_details.append(item_data)
