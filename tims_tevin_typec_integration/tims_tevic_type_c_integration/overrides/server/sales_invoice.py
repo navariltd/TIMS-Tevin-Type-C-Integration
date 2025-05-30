@@ -28,11 +28,11 @@ def on_submit(doc: Document, method: str | None = None) -> None:
     validate_tax_id(doc)
     
     invoice_category = get_invoice_category(doc)
-    hs_code, tax_rate = get_tax_details(doc)
-    validate_tax_exemption(doc, hs_code, tax_rate)
+    tax_rate = get_tax_details(doc)
+    validate_tax_exemption(doc, tax_rate)
     
     relevant_invoice_number = get_relevant_invoice_number(doc)
-    item_details = build_item_details(doc, hs_code, tax_rate)
+    item_details = build_item_details(doc, tax_rate)
     
     payload = build_payload(doc, setting, invoice_category, relevant_invoice_number, item_details)
     submit_to_tims(doc, setting, payload)
@@ -72,9 +72,6 @@ def get_invoice_category(doc) -> str:
 
 def get_tax_details(doc) -> tuple:
     """Get tax details (HS Code and tax rate) for the document"""
-    hs_code = frappe.db.get_value(
-        "Tax Category", {"name": doc.tax_category}, ["custom_hs_code"]
-    )
     
     tax_rule = frappe.db.get_value(
         "Tax Rule",
@@ -92,15 +89,16 @@ def get_tax_details(doc) -> tuple:
         ["rate"],
     )
     
-    return hs_code, tax_rate
+    return tax_rate
 
 
-def validate_tax_exemption(doc, hs_code, tax_rate) -> None:
+def validate_tax_exemption(doc, tax_rate) -> None:
     """Validate tax exemption requirements"""
-    if tax_rate == 0 and not hs_code:
-        frappe.throw(
-            "Please contact the <b>Account Controller</b> to ensure the HSCode for this customer's Tax Category is set"
-        )
+    for item in doc.items:
+        if tax_rate == 0 and not item.custom_hs_code:
+            frappe.throw(
+                "Please contact the <b>Account Controller</b> to ensure the HSCode for this customer's Tax Category is set"
+            )
 
 
 def get_relevant_invoice_number(doc) -> str:
@@ -125,7 +123,7 @@ def get_relevant_invoice_number(doc) -> str:
     return relevant_invoice_number
 
 
-def build_item_details(doc, hs_code, tax_rate) -> list[dict]:
+def build_item_details(doc, tax_rate) -> list[dict]:
     """Build item details for the payload"""
     item_details = []
     
@@ -136,6 +134,7 @@ def build_item_details(doc, hs_code, tax_rate) -> list[dict]:
             "TransactionType": "1",
             "UnitPrice": item.base_net_rate,
             "Quantity": abs(item.qty),
+            "HSCode":item.custom_hs_code
         }
         
         if tax_rate == 0:
@@ -143,7 +142,6 @@ def build_item_details(doc, hs_code, tax_rate) -> list[dict]:
             item_data.update({
                 "TaxRate": 0,
                 "TaxAmount": 0,
-                "HSCode": hs_code,
             })
         else:
             item_data.update({
@@ -413,6 +411,4 @@ def single_invoice_submission(doc):
     doc = frappe.get_doc("Sales Invoice", doc_name)
     on_submit(doc)
     frappe.msgprint("TIMS submission successful")
-    
-    
     
