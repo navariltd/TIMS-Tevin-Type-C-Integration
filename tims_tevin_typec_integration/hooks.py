@@ -8,20 +8,45 @@ required_apps = ["frappe/erpnext"]
 
 # Fixtures
 # --------
+# fixtures = [
+#     {
+#         "doctype": "Custom Field",
+#         "filters": [
+#             [
+#                 "dt",
+#                 "in",
+#                 ("Sales Invoice", "Tax Category", "Sales Order", "Sales Invoice Item"),
+#             ],
+#             ["is_system_generated", "=", 0],
+#             ["module", "=", app_title],
+#         ],
+#     },
+# ]
+
 fixtures = [
     {
         "doctype": "Custom Field",
         "filters": [
             [
-                "dt",
+                "name",
                 "in",
-                ("Sales Invoice", "Tax Category", "Sales Order"),
-            ],
-            ["is_system_generated", "=", 0],
-            ["module", "=", app_title],
+                (
+                    "Tax Category-custom_hs_code",
+                    "Sales Invoice-custom_tab_7",
+                    "Sales Invoice-custom_reference_invoice_details",
+                    "Sales Invoice-custom_relevant_invoice_number",
+                    "Sales Invoice-custom_section_break_k9mrh",
+                    "Sales Invoice-custom_cu_invoice_number",
+                    "Sales Invoice-custom_column_break_vilae",
+                    "Sales Invoice-custom_qr_image",
+                    "Sales Invoice-custom_qr_code",
+                    "Sales Invoice Item-custom_hs_code",
+                ),
+            ]
         ],
-    },
+    }
 ]
+
 
 # Includes in <head>
 # ------------------
