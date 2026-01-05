@@ -145,8 +145,8 @@ def build_item_details(doc, tax_rate) -> list[dict]:
             })
         else:
             item_data.update({
-                "TaxRate": item.custom_tax_rate,
-                "TaxAmount": abs(item.custom_tax_amount),
+                "TaxRate": float(item.custom_tax_rate),
+                "TaxAmount": abs(float(item.custom_tax_amount)),
             })
         
         item_details.append(item_data)
@@ -270,6 +270,8 @@ def update_integration_request(
     doc.output = str(output)
 
     doc.save(ignore_permissions=True)
+    
+    return doc.reference_docname
 
 
 def make_tims_request(
@@ -289,7 +291,10 @@ def make_tims_request(
             invoice_info = response.json()["Existing"]
         invoice = invoice_info["TraderSystemInvoiceNumber"]
 
-        update_integration_request(integration_request, "Completed", response.json())
+        sales_invoice = update_integration_request(integration_request, "Completed", response.json())
+        
+        print('-------------------------------')
+        print(sales_invoice)
 
         qr_code = get_qr_code(invoice_info["QRCode"])
         
@@ -299,13 +304,16 @@ def make_tims_request(
 
         frappe.db.set_value(
             "Sales Invoice",
-            invoice_number,
+            sales_invoice,
             {
                 "custom_cu_invoice_number": invoice_info["ControlCode"],
                 "custom_qr_code": qr_code,
             },
             update_modified=True,
         )
+        
+        
+        frappe.db.commit()
         '''If you decide to go with the custom_delivery_note_no field, uncomment the code below'''
         # invoice_name=frappe.db.get_value("Sales Invoice",{"custom_delivery_note_no":invoice},"name")
         # frappe.db.set_value(
