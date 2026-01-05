@@ -26,7 +26,8 @@ def before_save(doc, method=None):
 def before_save_sales_invoice(doc, method=None):
     get_hs_code_before_save(doc)
     if doc.is_return==1:
-        calculate_tax(doc)
+        return
+    calculate_tax(doc)
     
 
 def get_hs_code_before_save(doc):
