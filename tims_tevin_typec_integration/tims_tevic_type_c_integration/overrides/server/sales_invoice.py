@@ -292,10 +292,6 @@ def make_tims_request(
         invoice = invoice_info["TraderSystemInvoiceNumber"]
 
         sales_invoice = update_integration_request(integration_request, "Completed", response.json())
-        
-        print('-------------------------------')
-        print(sales_invoice)
-
         qr_code = get_qr_code(invoice_info["QRCode"])
         
         '''Change the prefix to CN- if the invoice is a credit note'''
