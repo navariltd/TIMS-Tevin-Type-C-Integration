@@ -200,7 +200,7 @@ def build_payload(
     return {
         "Invoice": {
             "SenderId": setting.sender_id,
-            "TraderSystemInvoiceNumber": trader_invoice_no,
+            "TraderSystemInvoiceNumber": doc.name,
             "InvoiceCategory": invoice_category,
             "InvoiceTimestamp": f"{doc.posting_date}T{posting_time}",
             "RelevantInvoiceNumber": relevant_invoice_number,
