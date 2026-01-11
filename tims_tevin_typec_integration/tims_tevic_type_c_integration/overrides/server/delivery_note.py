@@ -1,16 +1,38 @@
 
 import frappe
 def calculate_tax(doc):
-    tax_rate = items_tax_fields(doc)
-    for item in doc.items:
-        tax = 0
-        if tax_rate:
-            tax = item.net_amount * tax_rate / 100
-        item.custom_tax_amount = tax
-        item.custom_tax_rate = tax_rate
-    
+    tims_settings = get_tims_settings(doc)
+    if tims_settings and tims_settings.get("individual_item_taxes"):
+        for item in doc.items:
+            tax_rate = get_item_tax_rate(item)
+            append_tax_rate_to_item(tax_rate, item)
+    elif tims_settings and not tims_settings.get("individual_item_taxes"):
+        tax_rate = items_tax_fields(doc)
+        for item in doc.items:
+            append_tax_rate_to_item(tax_rate, item)
+        
     else:
         return 0
+    
+
+def append_tax_rate_to_item(tax_rate, item):
+    tax = 0
+    if tax_rate:
+        tax = item.net_amount * tax_rate / 100
+    item.custom_tax_amount = tax
+    item.custom_tax_rate = tax_rate
+
+
+def get_item_tax_rate(item):
+
+    item = frappe.get_doc("Item", item.item_code)
+    if item.taxes:
+        item_tax_template = item.taxes[0].item_tax_template
+
+    item_tax_template_doc = frappe.get_doc("Item Tax Template", item_tax_template)
+    if item_tax_template_doc.taxes:
+        return item_tax_template_doc.taxes[0].tax_rate
+        
     
 def items_tax_fields(doc):
     taxes_template = doc.taxes_and_charges
@@ -19,7 +41,17 @@ def items_tax_fields(doc):
         return tax_template.taxes[0].rate
     else:
         return None
-    
+
+def get_tims_settings(doc) -> dict | None:
+    """Get TIMS settings for the company"""
+    company = frappe.defaults.get_user_default("Company")
+    return frappe.db.get_value(
+        "TIMS Settings",
+        {"company": company, "is_active": 1},
+        ["server_address", "sender_id","individual_item_taxes"],
+        as_dict=True,
+    )
+
 def before_save(doc, method=None):
     calculate_tax(doc)
     
