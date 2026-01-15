@@ -14,7 +14,6 @@
   "column_break_atws",
   "server_address",
   "branch_id",
-  "individual_item_taxes",
   "is_active",
   "miscellaneous_tab",
   "background_jobs_configuration_section",
@@ -140,18 +139,11 @@
    "fieldname": "is_active",
    "fieldtype": "Check",
    "label": "Is Active?"
-  },
-  {
-   "default": "0",
-   "description": "Enable to apply tax rates from individual Item Tax Templates for each line item. Disable to apply the same tax rate from Sales Taxes and Charges to all items ",
-   "fieldname": "individual_item_taxes",
-   "fieldtype": "Check",
-   "label": "Apply Individual Item Taxes"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-11 23:30:36.988068",
+ "modified": "2026-01-15 08:37:01.388277",
  "modified_by": "Administrator",
  "module": "TIMS Tevic Type-C Integration",
  "name": "TIMS Settings",
