@@ -12,29 +12,31 @@ from frappe.integrations.utils import create_request_log
 from frappe.model.document import Document
 from frappe.utils import get_formatted_email
 from frappe.utils.user import get_users_with_role
-from erpnext.controllers.taxes_and_totals import get_itemised_tax_breakup_data
 
 CASH_CUSTOMER_CONTROL = "CASH CUSTOMER CONTROL"
+
 
 def on_submit(doc: Document, method: str | None = None) -> None:
     """Submit hook for Sales Invoice that submits tax information to TIMS device"""
     if should_skip_submission(doc):
         return
-    
+
     setting = get_tims_settings(doc)
     if not setting:
         return
-        
+
     validate_tax_id(doc)
-    
+
     invoice_category = get_invoice_category(doc)
     tax_rate = get_tax_details(doc)
     validate_tax_exemption(doc, tax_rate)
-    
+
     relevant_invoice_number = get_relevant_invoice_number(doc)
     item_details = build_item_details(doc, tax_rate)
-    
-    payload = build_payload(doc, setting, invoice_category, relevant_invoice_number, item_details)
+
+    payload = build_payload(
+        doc, setting, invoice_category, relevant_invoice_number, item_details
+    )
     submit_to_tims(doc, setting, payload)
 
 
@@ -72,14 +74,14 @@ def get_invoice_category(doc) -> str:
 
 def get_tax_details(doc) -> tuple:
     """Get tax details (HS Code and tax rate) for the document"""
-    
+
     tax_rule = frappe.db.get_value(
         "Tax Rule",
         {"tax_category": doc.tax_category, "tax_type": "Sales"},
         ["sales_tax_template"],
         as_dict=True,
     )
-    
+
     tax_rate = frappe.db.get_value(
         "Sales Taxes and Charges",
         {
@@ -88,7 +90,7 @@ def get_tax_details(doc) -> tuple:
         },
         ["rate"],
     )
-    
+
     return tax_rate
 
 
@@ -104,7 +106,7 @@ def validate_tax_exemption(doc, tax_rate) -> None:
 def get_relevant_invoice_number(doc) -> str:
     """Get and validate the relevant invoice number for returns"""
     relevant_invoice_number = ""
-    
+
     if doc.is_return:
         if not doc.return_against:
             if not doc.custom_relevant_invoice_number:
@@ -119,14 +121,14 @@ def get_relevant_invoice_number(doc) -> str:
                 ["custom_cu_invoice_number"],
             )
         validate_relevant_invoice_number(relevant_invoice_number)
-    
+
     return relevant_invoice_number
 
 
 def build_item_details(doc, tax_rate) -> list[dict]:
     """Build item details for the payload"""
     item_details = []
-    
+
     for item in doc.items:
         item_data = {
             "HSDesc": strip_html_tags(item.description),
@@ -134,23 +136,27 @@ def build_item_details(doc, tax_rate) -> list[dict]:
             "TransactionType": "1",
             "UnitPrice": item.base_net_rate,
             "Quantity": abs(item.qty),
-            "HSCode":item.custom_hs_code
+            "HSCode": item.custom_hs_code,
         }
-        
+
         if tax_rate == 0:
             # Exempt customers
-            item_data.update({
-                "TaxRate": 0,
-                "TaxAmount": 0,
-            })
+            item_data.update(
+                {
+                    "TaxRate": 0,
+                    "TaxAmount": 0,
+                }
+            )
         else:
-            item_data.update({
-                "TaxRate": float(item.custom_tax_rate),
-                "TaxAmount": abs(float(item.custom_tax_amount)),
-            })
-        
+            item_data.update(
+                {
+                    "TaxRate": float(item.custom_tax_rate),
+                    "TaxAmount": abs(float(item.custom_tax_amount)),
+                }
+            )
+
         item_details.append(item_data)
-    
+
     return item_details
 
 
@@ -172,18 +178,22 @@ def format_posting_time(posting_time) -> str:
 
 def get_buyer_pin(doc) -> str:
     """Get the buyer's PIN/KRA tax ID"""
-    CASH_CUSTOMER_CONTROL = "Cash Customer"  # This should probably be a constant defined elsewhere
+    CASH_CUSTOMER_CONTROL = (
+        "Cash Customer"  # This should probably be a constant defined elsewhere
+    )
     if doc.customer == CASH_CUSTOMER_CONTROL:
         return doc.custom_cash_customer_kra_pin or ""
     return doc.tax_id or ""
 
 
-def build_payload(doc, setting, invoice_category, relevant_invoice_number, item_details) -> dict:
+def build_payload(
+    doc, setting, invoice_category, relevant_invoice_number, item_details
+) -> dict:
     """Build the payload for TIMS submission"""
     trader_invoice_no = get_trader_invoice_number(doc)
     posting_time = format_posting_time(doc.posting_time)
     pin = get_buyer_pin(doc)
-    
+
     return {
         "Invoice": {
             "SenderId": setting.sender_id,
@@ -219,16 +229,18 @@ def submit_to_tims(doc, setting, payload) -> None:
         reference_docname=doc.name,
         reference_doctype="Sales Invoice",
     )
-    
+
     frappe.enqueue(
         make_tims_request,
+        enqueue_after_commit=True,
         url=url,
         payload=payload,
         integration_request=integration_request.name,
         queue="default",
         is_async=True,
         timeout=65,
-    )       
+    )
+
 
 def is_valid_kra_pin(pin: str) -> bool:
     """Checks if the string provided conforms to the pattern of a KRA PIN.
@@ -246,7 +258,7 @@ def is_valid_kra_pin(pin: str) -> bool:
 
 
 def strip_html_tags(text):
-    clean_text = re.sub(r'<[^>]*>', '', text)
+    clean_text = re.sub(r"<[^>]*>", "", text)
     return clean_text
 
 
@@ -270,7 +282,7 @@ def update_integration_request(
     doc.output = str(output)
 
     doc.save(ignore_permissions=True)
-    
+
     return doc.reference_docname
 
 
@@ -291,11 +303,15 @@ def make_tims_request(
             invoice_info = response.json()["Existing"]
         invoice = invoice_info["TraderSystemInvoiceNumber"]
 
-        sales_invoice = update_integration_request(integration_request, "Completed", response.json())
+        sales_invoice = update_integration_request(
+            integration_request, "Completed", response.json()
+        )
         qr_code = get_qr_code(invoice_info["QRCode"])
-        
-        '''Change the prefix to CN- if the invoice is a credit note'''
-        invoice_prefix = "CN-" if invoice_info["InvoiceCategory"] == "Credit Note" else "INV-"
+
+        """Change the prefix to CN- if the invoice is a credit note"""
+        invoice_prefix = (
+            "CN-" if invoice_info["InvoiceCategory"] == "Credit Note" else "INV-"
+        )
         invoice_number = f"{invoice_prefix}{invoice}"
 
         frappe.db.set_value(
@@ -307,10 +323,9 @@ def make_tims_request(
             },
             update_modified=True,
         )
-        
-        
+
         frappe.db.commit()
-        '''If you decide to go with the custom_delivery_note_no field, uncomment the code below'''
+        """If you decide to go with the custom_delivery_note_no field, uncomment the code below"""
         # invoice_name=frappe.db.get_value("Sales Invoice",{"custom_delivery_note_no":invoice},"name")
         # frappe.db.set_value(
         #     "Sales Invoice",
@@ -397,16 +412,21 @@ def notify_users(role: str, integration_request: str) -> None:
         delayed=False,
     )
 
+
 def format_time_for_invoice(time: str) -> str:
     """Format time to ensure leading zero for single-digit hours."""
     hour, minute, second = time.split(":")
     return f"{int(hour):02d}:{minute}:{second}"
 
+
 def validate_relevant_invoice_number(relevant_invoice_number):
     if len(relevant_invoice_number) != 19:
         frappe.throw(
-            "The <b>Relevant Invoice Number</b> must be exactly 19 characters long and should be the CU number. Current length: {}.".format(len(relevant_invoice_number))
+            "The <b>Relevant Invoice Number</b> must be exactly 19 characters long and should be the CU number. Current length: {}.".format(
+                len(relevant_invoice_number)
+            )
         )
+
 
 @frappe.whitelist()
 def single_invoice_submission(doc):
@@ -414,4 +434,3 @@ def single_invoice_submission(doc):
     doc = frappe.get_doc("Sales Invoice", doc_name)
     on_submit(doc)
     frappe.msgprint("TIMS submission successful")
-    
