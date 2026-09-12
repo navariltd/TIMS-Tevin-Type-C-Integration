@@ -1,70 +1,137 @@
 # Copyright (c) 2024, Navari Ltd and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
+from urllib.parse import urlparse
+
 import frappe
+from frappe import _
 from frappe.email.queue import flush
 from frappe.model.document import Document
 
 from ...tasks.tasks import get_eod_records, resend_invoices
 
+ALLOWED_URL_SCHEMES = ("http", "https")
+API_PATH_SUFFIX = "/api"
+
+#: (frequency field, cron field, pattern matching the Scheduled Job Type method)
+CONFIGURABLE_JOBS = (
+	("eod_fetch_frequency", "eod_cron", f"%{get_eod_records.__name__}%"),
+	("resend_invoices_frequency", "resend_invoices_cron", f"%{resend_invoices.__name__}%"),
+	("flush_email_frequency", "flush_email_cron", f"%email%{flush.__name__}%"),
+)
+
 
 class TIMSSettings(Document):
-    # TODO: Provide link to Branch
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
 
-    def validate(self) -> None:
-        if self.server_address:
-            if not self.server_address.startswith("http"):
-                # WARNING: Prepend http for now as hostname is IP address
-                self.server_address = f"http://{self.server_address}"
+	from typing import TYPE_CHECKING
 
-            if not self.server_address.endswith("/api"):
-                self.server_address = f"{self.server_address}/api"
+	if TYPE_CHECKING:
+		from frappe.types import DF
 
-    def on_update(self) -> None:
-        if self.has_value_changed("flush_email_frequency"):
-            if self.flush_email_frequency:
-                flush_emails_task: Document = frappe.get_doc(
-                    "Scheduled Job Type",
-                    {"method": ["like", f"%email%{flush.__name__}%"]},
-                    ["name", "method", "frequency", "cron_format"],
-                    for_update=True,
-                )
+		api_key: DF.Password | None
+		branch_id: DF.Data | None
+		cash_customer: DF.Link | None
+		company: DF.Link
+		cusn: DF.Data | None
+		eod_cron: DF.Data | None
+		eod_fetch_frequency: DF.Literal["", "Daily", "Cron"]
+		flush_email_cron: DF.Data | None
+		flush_email_frequency: DF.Literal["", "All", "Hourly", "Cron"]
+		is_active: DF.Check
+		request_timeout: DF.Int
+		resend_batch_size: DF.Int
+		resend_cooldown_minutes: DF.Int
+		resend_invoices_cron: DF.Data | None
+		resend_invoices_frequency: DF.Literal["", "All", "Hourly", "Daily", "Cron"]
+		resend_lookback_days: DF.Int
+		sender_id: DF.Data
+		server_address: DF.Data
+		verify_tls: DF.Check
+	# end: auto-generated types
 
-                flush_emails_task.frequency = self.flush_email_frequency
+	def validate(self) -> None:
+		self.validate_server_address()
+		self.validate_one_active_setting_per_company()
 
-                if self.flush_email_frequency == "Cron":
-                    flush_emails_task.cron_format = self.flush_email_cron
+	def validate_server_address(self) -> None:
+		"""Normalise the device address and reject anything unsafe to call."""
+		address = (self.server_address or "").strip().rstrip("/")
 
-                flush_emails_task.save()
+		if "://" not in address:
+			# The device is normally reached by IP on the local network.
+			address = f"http://{address}"
 
-        if self.has_value_changed("eod_fetch_frequency"):
-            if self.eod_fetch_frequency:
-                eod_fetch_task: Document = frappe.get_doc(
-                    "Scheduled Job Type",
-                    {"method": ["like", f"%{get_eod_records.__name__}%"]},
-                    ["name", "method", "frequency", "cron_format"],
-                    for_update=True,
-                )
+		parsed = urlparse(address)
 
-                eod_fetch_task.frequency = self.eod_fetch_frequency
+		if parsed.scheme not in ALLOWED_URL_SCHEMES:
+			frappe.throw(
+				_("The Server Address must use http or https, not {0}.").format(frappe.bold(parsed.scheme))
+			)
 
-                if self.eod_fetch_frequency == "Cron":
-                    eod_fetch_task.cron_format = self.eod_cron
+		if not parsed.hostname:
+			frappe.throw(_("The Server Address is missing a hostname."))
 
-                eod_fetch_task.save()
+		if parsed.username or parsed.password:
+			frappe.throw(
+				_("Do not put credentials in the Server Address. Use the {0} field instead.").format(
+					frappe.bold(_("API Key"))
+				)
+			)
 
-        if self.has_value_changed("resend_invoices_frequency"):
-            if self.resend_invoices_frequency:
-                resend_invoices_task: Document = frappe.get_doc(
-                    "Scheduled Job Type",
-                    {"method": ["like", f"%{resend_invoices.__name__}%"]},
-                    ["name", "method", "frequency", "cron_format"],
-                    for_update=True,
-                )
+		if parsed.query or parsed.fragment:
+			frappe.throw(_("The Server Address must not contain a query string or fragment."))
 
-                resend_invoices_task.frequency = self.resend_invoices_frequency
+		if not parsed.path.endswith(API_PATH_SUFFIX):
+			address = f"{address}{API_PATH_SUFFIX}"
 
-                if self.resend_invoices_frequency == "Cron":
-                    resend_invoices_task.cron_format = self.resend_invoices_cron
+		self.server_address = address
 
-                resend_invoices_task.save()
+	def validate_one_active_setting_per_company(self) -> None:
+		"""Invoices resolve their device by company, so the match must be unique."""
+		if not self.is_active:
+			return
+
+		existing = frappe.db.get_value(
+			"TIMS Settings",
+			{"company": self.company, "is_active": 1, "name": ("!=", self.name)},
+			"name",
+		)
+
+		if existing:
+			frappe.throw(
+				_("{0} is already the active TIMS Setting for {1}. Deactivate it first.").format(
+					frappe.bold(existing), frappe.bold(self.company)
+				)
+			)
+
+	def on_update(self) -> None:
+		for frequency_field, cron_field, method_pattern in CONFIGURABLE_JOBS:
+			frequency = self.get(frequency_field)
+			if frequency and self.has_value_changed(frequency_field):
+				set_job_frequency(method_pattern, frequency, self.get(cron_field))
+
+
+def set_job_frequency(method_pattern: str, frequency: str, cron_format: str | None) -> None:
+	"""Repoint a Scheduled Job Type at the frequency chosen in these settings."""
+	name = frappe.db.get_value("Scheduled Job Type", {"method": ("like", method_pattern)}, "name")
+
+	if not name:
+		frappe.log_error(
+			title=_("TIMS: Scheduled Job Type not found"),
+			message=_("No Scheduled Job Type matches {0}, so its frequency was left unchanged.").format(
+				method_pattern
+			),
+		)
+		return
+
+	job = frappe.get_doc("Scheduled Job Type", name)
+	job.frequency = frequency
+
+	if frequency == "Cron":
+		job.cron_format = cron_format
+
+	job.save(ignore_permissions=True)

@@ -40,11 +40,17 @@ fixtures = [
                     "Sales Invoice-custom_column_break_vilae",
                     "Sales Invoice-custom_qr_image",
                     "Sales Invoice-custom_qr_code",
+                    "Sales Invoice-custom_cash_customer_kra_pin",
                     "Sales Invoice Item-custom_hs_code",
                 ),
             ]
         ],
-    }
+    },
+    {
+        # Recipients of the "Notify of Failed TIMS Requests" Notification.
+        "doctype": "Role",
+        "filters": [["name", "in", ("TIMS Administrator",)]],
+    },
 ]
 
 
@@ -173,13 +179,9 @@ doc_events = {
     # 	"on_trash": "method"
     # }
     "Sales Invoice": {
-        "before_save":"tims_tevin_typec_integration.tims_tevic_type_c_integration.overrides.server.delivery_note.before_save_sales_invoice",
-        "on_submit": "tims_tevin_typec_integration.tims_tevic_type_c_integration.overrides.server.sales_invoice.on_submit"
+        "before_save": "tims_tevin_typec_integration.tims_tevic_type_c_integration.overrides.server.sales_invoice.before_save",
+        "on_submit": "tims_tevin_typec_integration.tims_tevic_type_c_integration.overrides.server.sales_invoice.on_submit",
     },
-    "Delivery Note": {
-        "before_save": "tims_tevin_typec_integration.tims_tevic_type_c_integration.overrides.server.delivery_note.before_save"
-    }
-    
 }
 
 # Scheduled Tasks

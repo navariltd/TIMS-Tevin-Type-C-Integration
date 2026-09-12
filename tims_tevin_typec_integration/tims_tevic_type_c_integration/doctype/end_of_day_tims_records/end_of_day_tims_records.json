@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "end_of_day_id",
+  "company",
   "section_break_pwtt",
   "date_of_summary",
   "first_invoice_number",
@@ -23,6 +24,16 @@
    "fieldtype": "Data",
    "label": "End of Day ID",
    "unique": 1
+  },
+  {
+   "description": "Company whose TIMS device reported this summary.",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_pwtt",
@@ -83,7 +94,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-27 14:07:54.217095",
+ "modified": "2026-08-14 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "TIMS Tevic Type-C Integration",
  "name": "End Of Day TIMS Records",
@@ -101,6 +112,11 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TIMS Administrator"
   }
  ],
  "sort_field": "modified",
