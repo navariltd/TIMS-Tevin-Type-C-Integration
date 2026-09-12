@@ -1,20 +1,20 @@
-## TIMS Tevic Type-C Integration
+## TIMS Tevin Type-C Integration
 
 
-### **Integrating TIMS Tevic Type C with ERPNext**
+### **Integrating TIMS Tevin Type C with ERPNext**
 
-TIMS Tevic Type C app enhances business operations by ensuring compliance with Kenya Revenue Authority (KRA) regulations through real-time submission of invoices and credit notes. This integration streamlines tax reporting, improves operational efficiency, and ensures accurate financial records, reducing the risk of penalties while fostering trust with tax authorities.
+TIMS Tevin Type C app enhances business operations by ensuring compliance with Kenya Revenue Authority (KRA) regulations through real-time submission of invoices and credit notes. This integration streamlines tax reporting, improves operational efficiency, and ensures accurate financial records, reducing the risk of penalties while fostering trust with tax authorities.
 
 ----------
 
 ### **Requirements**
 
 -   **Purchase the Type C Middleware for Accounting**  
-    The middleware is essential for this integration and can be obtained from [Tevic](https://tevin.eu/type-c-middleware/).
+    The middleware is essential for this integration and can be obtained from [Tevin](https://tevin.eu/type-c-middleware/).
     ![Screenshot from 2024-12-13 12-26-37](https://github.com/user-attachments/assets/fdee247a-90ca-4b14-b028-834e83dfd35f)
 
 -   **API Server Details**  
-    Ensure you have the API server link and senderID provided by Tevic upon purchasing the middleware(Both fir sandbox and production).
+    Ensure you have the API server link and senderID provided by Tevin upon purchasing the middleware(Both for sandbox and production).
     
 
 ----------
@@ -26,7 +26,7 @@ TIMS Tevic Type C app enhances business operations by ensuring compliance with K
     Navigate to the **TIMS Settings** doctype in ERPNext and fill out the following fields:
     
     -   **Company**: Select the company to associate with the integration.
-    -   **Server Address**: Enter the API server address provided by Tevic.
+    -   **Server Address**: Enter the API server address provided by Tevin.
     -   **Sender ID**: Enter the Sender ID from the API credentials.
     -   **Is Active**: Check this box to activate the integration.
     
@@ -37,10 +37,10 @@ TIMS Tevic Type C app enhances business operations by ensuring compliance with K
 
 ### **Invoice Submission Process**
 
-1.  **Automatic Submission to Tevic**
+1.  **Automatic Submission to Tevin**
     
-    -   When an invoice is **submitted** in ERPNext, the system automatically sends its details to Tevic.
-    -   The payload (invoice data) and headers are prepared according to Tevic's requirements.
+    -   When an invoice is **submitted** in ERPNext, the system automatically sends its details to Tevin.
+    -   The payload (invoice data) and headers are prepared according to Tevin's requirements.
       ![image (2)](https://github.com/user-attachments/assets/2e2e61fd-2f44-4481-a078-46f4f461248e)
 
     -   Successful response will create cu number and QR code on the invoice
@@ -56,7 +56,7 @@ TIMS Tevic Type C app enhances business operations by ensuring compliance with K
         -   The QR code will appear on the invoice printout provided to the customer.
 4.  **Credit Notes**
     
-    -   The same process applies when submitting a credit note. The details are sent to Tevic, and the response is recorded.
+    -   The same process applies when submitting a credit note. The details are sent to Tevin, and the response is recorded.
 
 ----------
 
@@ -70,7 +70,7 @@ TIMS Tevic Type C app enhances business operations by ensuring compliance with K
 2.  **Automatic Resubmission**
     
     -   A scheduled task runs every minute to resend pending invoices.
-    -   Invoices that failed to send are automatically retried until successfully transmitted to Tevic.
+    -   Invoices that failed to send are automatically retried until successfully transmitted to Tevin.
 
 ----------
 
@@ -92,7 +92,7 @@ Once an invoice is successfully submitted:
 
 ----------
 
-This setup ensures smooth and compliant submission of invoices and credit notes to Tevic, maintaining real-time communication with KRA.
+This setup ensures smooth and compliant submission of invoices and credit notes to Tevin, maintaining real-time communication with KRA.
 
 #### Manual/Self-Hosted Installation
 
@@ -104,7 +104,7 @@ This setup ensures smooth and compliant submission of invoices and credit notes 
 
     
 
-3. Once bench and ERPNext are installed, add Tevic Type C app to your bench by running:
+3. Once bench and ERPNext are installed, add Tevin Type C app to your bench by running:
 
   
 ```sh
@@ -139,7 +139,7 @@ Replace `{sitename}` with the name of your site.
 
 - Create a new site.
 
-- Choose Frappe Version-15 or above, and select ERPNext, and TIMS Tevic Type-C Integration from the available Apps to Install.
+- Choose Frappe Version-15 or above, and select ERPNext, and TIMS Tevin Type-C Integration from the available Apps to Install.
 
 - Within minutes, the site will be up and running with a fresh install, ready to explore the app's simple and impressive features.
 
