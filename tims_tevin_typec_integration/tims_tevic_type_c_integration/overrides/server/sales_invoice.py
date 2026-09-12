@@ -15,12 +15,16 @@ from frappe.utils.user import get_users_with_role
 from erpnext.controllers.taxes_and_totals import get_itemised_tax_breakup_data
 
 CASH_CUSTOMER_CONTROL = "CASH CUSTOMER CONTROL"
+CU_NUMBER_LENGTH = 19
 
 
-def on_submit(doc: Document, method: str | None = None) -> None:
-    """Submit hook for Sales Invoice that submits tax information to TIMS device"""
+def on_submit(doc: Document, method: str | None = None) -> bool:
+    """Submit hook for Sales Invoice that submits tax information to TIMS device
+
+    Returns True if the invoice was queued for submission to TIMS.
+    """
     if should_skip_submission(doc):
-        return
+        return False
 
     setting = get_tims_settings(doc)
     if not setting:
@@ -35,12 +39,17 @@ def on_submit(doc: Document, method: str | None = None) -> None:
     validate_tax_exemption(doc, tax_rate)
 
     relevant_invoice_number = get_relevant_invoice_number(doc)
+    if relevant_invoice_number is None:
+        return False
+
     item_details = build_item_details(doc, tax_rate)
 
     payload = build_payload(
         doc, setting, invoice_category, relevant_invoice_number, item_details
     )
     submit_to_tims(doc, setting, payload)
+
+    return True
 
 
 def should_skip_submission(doc) -> bool:
@@ -106,26 +115,44 @@ def validate_tax_exemption(doc, tax_rate) -> None:
             )
 
 
-def get_relevant_invoice_number(doc) -> str:
-    """Get and validate the relevant invoice number for returns"""
-    relevant_invoice_number = ""
+def get_relevant_invoice_number(doc) -> str | None:
+    """Get the relevant invoice number to send to TIMS.    """
+    if not doc.is_return:
+        return ""
 
-    if doc.is_return:
-        if not doc.return_against:
-            if not doc.custom_relevant_invoice_number:
-                frappe.throw(
-                    "Please enter the CU Number in the <b>Relevant Invoice Number</b> field"
-                )
-            relevant_invoice_number = doc.custom_relevant_invoice_number
-        else:
-            relevant_invoice_number = frappe.db.get_value(
+    relevant_invoice_number = doc.custom_relevant_invoice_number
+
+    if doc.return_against:
+        relevant_invoice_number = (
+            frappe.db.get_value(
                 "Sales Invoice",
                 {"name": doc.return_against},
                 ["custom_cu_invoice_number"],
             )
-        validate_relevant_invoice_number(relevant_invoice_number)
+            or relevant_invoice_number
+        )
 
-    return relevant_invoice_number
+    if not relevant_invoice_number:
+        if doc.return_against:
+            reason = f"the invoice it is raised against (<b>{doc.return_against}</b>) has no CU Invoice Number yet"
+            remedy = f"Send <b>{doc.return_against}</b> to TIMS first - open it and use <b>eTims Actions &gt; Submit</b> - then do the same on this Credit Note."
+        else:
+            reason = "the <b>Relevant Invoice Number</b> field is empty"
+            remedy = "Enter the CU Number of the invoice being credited in the <b>Relevant Invoice Number</b> field, then use <b>eTims Actions &gt; Submit</b>."
+    elif len(relevant_invoice_number) != CU_NUMBER_LENGTH:
+        reason = f"<b>{relevant_invoice_number}</b> is not a valid CU Number - it must be exactly {CU_NUMBER_LENGTH} characters, but is {len(relevant_invoice_number)}"
+        remedy = "Correct the <b>Relevant Invoice Number</b>, then use <b>eTims Actions &gt; Submit</b>."
+    else:
+        return relevant_invoice_number
+
+    frappe.msgprint(
+        f"This Credit Note has been submitted, but was <b>not sent to TIMS</b> because {reason}."
+        f"<br><br>{remedy}",
+        title="Not Sent to TIMS",
+        indicator="orange",
+    )
+
+    return None
 
 
 def build_item_details(doc, tax_rate) -> list[dict]:
@@ -420,18 +447,9 @@ def format_time_for_invoice(time: str) -> str:
     return f"{int(hour):02d}:{minute}:{second}"
 
 
-def validate_relevant_invoice_number(relevant_invoice_number):
-    if len(relevant_invoice_number) != 19:
-        frappe.throw(
-            "The <b>Relevant Invoice Number</b> must be exactly 19 characters long and should be the CU number. Current length: {}.".format(
-                len(relevant_invoice_number)
-            )
-        )
-
-
 @frappe.whitelist()
 def single_invoice_submission(doc):
     doc_name = json.loads(doc).get("name")
     doc = frappe.get_doc("Sales Invoice", doc_name)
-    on_submit(doc)
-    frappe.msgprint("TIMS submission successful")
+    if on_submit(doc):
+        frappe.msgprint("Invoice queued for submission to TIMS")
