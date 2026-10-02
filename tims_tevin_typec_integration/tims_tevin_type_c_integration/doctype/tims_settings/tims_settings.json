@@ -1,0 +1,252 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2024-09-20 14:24:41.006213",
+ "description": "Settings doctype for TIMS Tevin Type-C device",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "credentials_tab",
+  "company",
+  "sender_id",
+  "cusn",
+  "cash_customer",
+  "column_break_atws",
+  "server_address",
+  "branch_id",
+  "is_active",
+  "connection_section",
+  "request_timeout",
+  "verify_tls",
+  "column_break_conn",
+  "api_key",
+  "miscellaneous_tab",
+  "background_jobs_configuration_section",
+  "eod_fetch_frequency",
+  "eod_cron",
+  "column_break_gwof",
+  "flush_email_frequency",
+  "flush_email_cron",
+  "column_break_jmvd",
+  "resend_invoices_frequency",
+  "resend_invoices_cron",
+  "resend_limits_section",
+  "resend_batch_size",
+  "resend_lookback_days",
+  "column_break_resend",
+  "resend_cooldown_minutes"
+ ],
+ "fields": [
+  {
+   "fieldname": "sender_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sender ID",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_atws",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Address of the TIMS Device. Format: hostname:port. http:// and /api are added automatically.",
+   "fieldname": "server_address",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Server Address",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "This is the company associated with this TIMS Setting.",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cusn",
+   "fieldtype": "Data",
+   "label": "CUSN",
+   "unique": 1
+  },
+  {
+   "description": "Walk-in customer whose KRA PIN is captured on the invoice instead of on the Customer record.",
+   "fieldname": "cash_customer",
+   "fieldtype": "Link",
+   "label": "Cash Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "branch_id",
+   "fieldtype": "Data",
+   "label": "Branch ID",
+   "unique": 1
+  },
+  {
+   "fieldname": "credentials_tab",
+   "fieldtype": "Tab Break",
+   "label": "Credentials"
+  },
+  {
+   "fieldname": "connection_section",
+   "fieldtype": "Section Break",
+   "label": "Connection"
+  },
+  {
+   "default": "30",
+   "description": "Seconds to wait for the device before giving up.",
+   "fieldname": "request_timeout",
+   "fieldtype": "Int",
+   "label": "Request Timeout (Seconds)",
+   "non_negative": 1
+  },
+  {
+   "default": "1",
+   "description": "Verify the TLS certificate. Only applies when the Server Address uses https.",
+   "fieldname": "verify_tls",
+   "fieldtype": "Check",
+   "label": "Verify TLS Certificate"
+  },
+  {
+   "fieldname": "column_break_conn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Optional. Sent as the X-API-Key header when the middleware sits behind an authenticating proxy.",
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API Key"
+  },
+  {
+   "fieldname": "miscellaneous_tab",
+   "fieldtype": "Tab Break",
+   "label": "Miscellaneous"
+  },
+  {
+   "default": "Daily",
+   "fieldname": "eod_fetch_frequency",
+   "fieldtype": "Select",
+   "label": "EOD Fetch Frequency",
+   "options": "\nDaily\nCron"
+  },
+  {
+   "depends_on": "eval:(doc.eod_fetch_frequency === \"Cron\");",
+   "fieldname": "eod_cron",
+   "fieldtype": "Data",
+   "label": "EOD Fetch Cron Expression",
+   "mandatory_depends_on": "eval:(doc.eod_fetch_frequency === \"Cron\");"
+  },
+  {
+   "fieldname": "column_break_gwof",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "All",
+   "fieldname": "flush_email_frequency",
+   "fieldtype": "Select",
+   "label": "Flush Email Frequency",
+   "options": "\nAll\nHourly\nCron"
+  },
+  {
+   "depends_on": "eval:(doc.flush_email_frequency === \"Cron\");",
+   "fieldname": "flush_email_cron",
+   "fieldtype": "Data",
+   "label": "Flush Email Cron Expression",
+   "mandatory_depends_on": "eval:(doc.flush_email_frequency === \"Cron\");"
+  },
+  {
+   "fieldname": "column_break_jmvd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "resend_invoices_frequency",
+   "fieldtype": "Select",
+   "label": "Resend Failed Invoices Frequency",
+   "options": "\nAll\nHourly\nDaily\nCron"
+  },
+  {
+   "depends_on": "eval:(doc.resend_invoices_frequency === \"Cron\")",
+   "fieldname": "resend_invoices_cron",
+   "fieldtype": "Data",
+   "label": "Resend Failed Invoices Cron Expression",
+   "mandatory_depends_on": "eval:(doc.resend_invoices_frequency === \"Cron\")"
+  },
+  {
+   "fieldname": "resend_limits_section",
+   "fieldtype": "Section Break",
+   "label": "Resend Limits"
+  },
+  {
+   "default": "20",
+   "description": "Most invoices to retry in one run.",
+   "fieldname": "resend_batch_size",
+   "fieldtype": "Int",
+   "label": "Resend Batch Size",
+   "non_negative": 1
+  },
+  {
+   "default": "7",
+   "description": "Only retry invoices posted within this many days.",
+   "fieldname": "resend_lookback_days",
+   "fieldtype": "Int",
+   "label": "Resend Lookback (Days)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_resend",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "60",
+   "description": "Wait this long after an attempt before retrying the same invoice.",
+   "fieldname": "resend_cooldown_minutes",
+   "fieldtype": "Int",
+   "label": "Resend Cooldown (Minutes)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "background_jobs_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Background Jobs Frequency Configuration"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active?"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-02 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TIMS Tevin Type-C Integration",
+ "name": "TIMS Settings",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

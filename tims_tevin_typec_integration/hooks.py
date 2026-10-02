@@ -1,58 +1,10 @@
 app_name = "tims_tevin_typec_integration"
-app_title = "TIMS Tevic Type-C Integration"
+app_title = "TIMS Tevin Type-C Integration"
 app_publisher = "Navari Ltd"
 app_description = "ERPNext integration between KRA's TIMS and Tevin Type-C TIMS device"
 app_email = "solutions@navari.co.ke"
 app_license = "agpl-3.0"
 required_apps = ["frappe/erpnext"]
-
-# Fixtures
-# --------
-# fixtures = [
-#     {
-#         "doctype": "Custom Field",
-#         "filters": [
-#             [
-#                 "dt",
-#                 "in",
-#                 ("Sales Invoice", "Tax Category", "Sales Order", "Sales Invoice Item"),
-#             ],
-#             ["is_system_generated", "=", 0],
-#             ["module", "=", app_title],
-#         ],
-#     },
-# ]
-
-fixtures = [
-    {
-        "doctype": "Custom Field",
-        "filters": [
-            [
-                "name",
-                "in",
-                (
-                    "Tax Category-custom_hs_code",
-                    "Sales Invoice-custom_tab_7",
-                    "Sales Invoice-custom_reference_invoice_details",
-                    "Sales Invoice-custom_relevant_invoice_number",
-                    "Sales Invoice-custom_section_break_k9mrh",
-                    "Sales Invoice-custom_cu_invoice_number",
-                    "Sales Invoice-custom_column_break_vilae",
-                    "Sales Invoice-custom_qr_image",
-                    "Sales Invoice-custom_qr_code",
-                    "Sales Invoice-custom_cash_customer_kra_pin",
-                    "Sales Invoice Item-custom_hs_code",
-                ),
-            ]
-        ],
-    },
-    {
-        # Recipients of the "Notify of Failed TIMS Requests" Notification.
-        "doctype": "Role",
-        "filters": [["name", "in", ("TIMS Administrator",)]],
-    },
-]
-
 
 # Includes in <head>
 # ------------------
@@ -76,9 +28,7 @@ fixtures = [
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {
-    "Sales Invoice": "tims_tevic_type_c_integration/overrides/client/sales_invoice.js"
-}
+doctype_js = {"Sales Invoice": "tims_tevin_type_c_integration/overrides/client/sales_invoice.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -119,6 +69,10 @@ doctype_js = {
 
 # before_install = "tims_tevin_typec_integration.install.before_install"
 # after_install = "tims_tevin_typec_integration.install.after_install"
+
+after_migrate = [
+	"tims_tevin_typec_integration.tims_tevin_type_c_integration.doctype.tims_settings.tims_settings.reapply_job_frequencies"
+]
 
 # Uninstallation
 # ------------
@@ -173,27 +127,24 @@ doctype_js = {
 # Hook on document methods and events
 
 doc_events = {
-    # "*": {
-    # 	"on_update": "method",
-    # 	"on_cancel": "method",
-    # 	"on_trash": "method"
-    # }
-    "Sales Invoice": {
-        "before_save": "tims_tevin_typec_integration.tims_tevic_type_c_integration.overrides.server.sales_invoice.before_save",
-        "on_submit": "tims_tevin_typec_integration.tims_tevic_type_c_integration.overrides.server.sales_invoice.on_submit",
-    },
+	# "*": {
+	# 	"on_update": "method",
+	# 	"on_cancel": "method",
+	# 	"on_trash": "method"
+	# }
+	"Sales Invoice": {
+		"before_save": "tims_tevin_typec_integration.tims_tevin_type_c_integration.overrides.server.sales_invoice.before_save",
+		"on_submit": "tims_tevin_typec_integration.tims_tevin_type_c_integration.overrides.server.sales_invoice.on_submit",
+		"before_cancel": "tims_tevin_typec_integration.tims_tevin_type_c_integration.overrides.server.sales_invoice.before_cancel",
+	},
 }
 
 # Scheduled Tasks
 # ---------------
 
 scheduler_events = {
-    "all": [
-        "tims_tevin_typec_integration.tims_tevic_type_c_integration.tasks.tasks.resend_invoices"
-    ],
-    "daily": [
-        "tims_tevin_typec_integration.tims_tevic_type_c_integration.tasks.tasks.get_eod_records"
-    ],
+	"all": ["tims_tevin_typec_integration.tims_tevin_type_c_integration.tasks.tasks.resend_invoices"],
+	"daily": ["tims_tevin_typec_integration.tims_tevin_type_c_integration.tasks.tasks.get_eod_records"],
 }
 
 # Testing

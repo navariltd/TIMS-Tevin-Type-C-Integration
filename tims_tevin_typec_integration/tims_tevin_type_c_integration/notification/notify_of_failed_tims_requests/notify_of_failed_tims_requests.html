@@ -1,0 +1,36 @@
+<p>A request to the TIMS device has failed and needs attention.</p>
+
+<table cellpadding="6" style="border-collapse: collapse;">
+	<tr>
+		<td><b>Error</b></td>
+		<td>{{ error_message }}</td>
+	</tr>
+	{% if status_code %}
+	<tr>
+		<td><b>HTTP Status</b></td>
+		<td>{{ status_code }}</td>
+	</tr>
+	{% endif %}
+	{% if device_response %}
+	<tr>
+		<td><b>Device Response</b></td>
+		<td><code>{{ device_response }}</code></td>
+	</tr>
+	{% endif %}
+	<tr>
+		<td><b>Endpoint</b></td>
+		<td>{{ doc.url }}</td>
+	</tr>
+	{% if doc.reference_docname %}
+	<tr>
+		<td><b>Reference</b></td>
+		<td><a href="{{ reference_url }}">{{ doc.reference_doctype }} {{ doc.reference_docname }}</a></td>
+	</tr>
+	{% endif %}
+	<tr>
+		<td><b>Time</b></td>
+		<td>{{ frappe.utils.format_datetime(doc.creation) }}</td>
+	</tr>
+</table>
+
+<p>Full request and response: <a href="{{ request_url }}">{{ doc.name }}</a></p>

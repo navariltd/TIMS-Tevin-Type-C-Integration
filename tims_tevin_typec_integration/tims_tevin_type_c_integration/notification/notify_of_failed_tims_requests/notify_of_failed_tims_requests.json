@@ -1,0 +1,31 @@
+{
+ "attach_print": 0,
+ "channel": "Email",
+ "condition": "doc.status == \"Failed\" and doc.integration_request_service == \"TIMS\"",
+ "creation": "2024-09-24 15:57:06.089224",
+ "days_in_advance": 0,
+ "docstatus": 0,
+ "doctype": "Notification",
+ "document_type": "Integration Request",
+ "enabled": 1,
+ "event": "Value Change",
+ "idx": 0,
+ "is_standard": 1,
+ "message": "<p>A request to the TIMS device has failed and needs attention.</p>\n\n<table cellpadding=\"6\" style=\"border-collapse: collapse;\">\n\t<tr>\n\t\t<td><b>Error</b></td>\n\t\t<td>{{ error_message }}</td>\n\t</tr>\n\t{% if status_code %}\n\t<tr>\n\t\t<td><b>HTTP Status</b></td>\n\t\t<td>{{ status_code }}</td>\n\t</tr>\n\t{% endif %}\n\t{% if device_response %}\n\t<tr>\n\t\t<td><b>Device Response</b></td>\n\t\t<td><code>{{ device_response }}</code></td>\n\t</tr>\n\t{% endif %}\n\t<tr>\n\t\t<td><b>Endpoint</b></td>\n\t\t<td>{{ doc.url }}</td>\n\t</tr>\n\t{% if doc.reference_docname %}\n\t<tr>\n\t\t<td><b>Reference</b></td>\n\t\t<td><a href=\"{{ reference_url }}\">{{ doc.reference_doctype }} {{ doc.reference_docname }}</a></td>\n\t</tr>\n\t{% endif %}\n\t<tr>\n\t\t<td><b>Time</b></td>\n\t\t<td>{{ frappe.utils.format_datetime(doc.creation) }}</td>\n\t</tr>\n</table>\n\n<p>Full request and response: <a href=\"{{ request_url }}\">{{ doc.name }}</a></p>\n",
+ "message_type": "HTML",
+ "modified": "2026-10-02 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TIMS Tevin Type-C Integration",
+ "name": "Notify of Failed TIMS Requests",
+ "owner": "Administrator",
+ "recipients": [
+  {
+   "receiver_by_document_field": "owner",
+   "receiver_by_role": "System Manager"
+  }
+ ],
+ "send_system_notification": 1,
+ "send_to_all_assignees": 0,
+ "subject": "Alert: Failure Status Returned from Remote TIMS Request - Action Required",
+ "value_changed": "status"
+}
