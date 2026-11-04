@@ -161,8 +161,6 @@ scheduler_events = {
 # Testing
 # -------
 
-before_tests = "tims_tevin_typec_integration.tims_tevin_type_c_integration.tests.setup.before_tests"
-
 # Overriding Methods
 # ------------------------------
 #
