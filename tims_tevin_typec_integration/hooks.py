@@ -5,6 +5,17 @@ app_description = "ERPNext integration between KRA's TIMS and Tevin Type-C TIMS 
 app_email = "solutions@navari.co.ke"
 app_license = "agpl-3.0"
 required_apps = ["frappe/erpnext"]
+app_logo_url = "/assets/tims_tevin_typec_integration/images/logo.svg"
+
+add_to_apps_screen = [
+	{
+		"name": "tims_tevin_typec_integration",
+		"logo": "/assets/tims_tevin_typec_integration/images/logo.svg",
+		"title": "TIMS Tevin Type-C",
+		"route": "/desk/tims-tevin-type-c/sales-invoice",
+		"has_permission": "tims_tevin_typec_integration.permissions.check_app_permission",
+	},
+]
 
 # Includes in <head>
 # ------------------
