@@ -8,13 +8,13 @@ required_apps = ["frappe/erpnext"]
 app_logo_url = "/assets/tims_tevin_typec_integration/images/logo.svg"
 
 add_to_apps_screen = [
-    {
-        "name": "tims_tevin_typec_integration",
-        "logo": "/assets/tims_tevin_typec_integration/images/logo.svg",
-        "title": "TIMS Tevin Type-C",
-        "route": "/desk/tims-tevin-type-c/sales-invoice",
-        "has_permission": "tims_tevin_typec_integration.permissions.check_app_permission",
-    },
+	{
+		"name": "tims_tevin_typec_integration",
+		"logo": "/assets/tims_tevin_typec_integration/images/logo.svg",
+		"title": "TIMS Tevin Type-C",
+		"route": "/desk/tims-tevin-type-c/sales-invoice",
+		"has_permission": "tims_tevin_typec_integration.permissions.check_app_permission",
+	},
 ]
 
 # Includes in <head>
@@ -39,9 +39,7 @@ add_to_apps_screen = [
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {
-    "Sales Invoice": "tims_tevin_type_c_integration/overrides/client/sales_invoice.js"
-}
+doctype_js = {"Sales Invoice": "tims_tevin_type_c_integration/overrides/client/sales_invoice.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -84,7 +82,7 @@ doctype_js = {
 # after_install = "tims_tevin_typec_integration.install.after_install"
 
 after_migrate = [
-    "tims_tevin_typec_integration.tims_tevin_type_c_integration.doctype.tims_settings.tims_settings.reapply_job_frequencies"
+	"tims_tevin_typec_integration.tims_tevin_type_c_integration.doctype.tims_settings.tims_settings.reapply_job_frequencies"
 ]
 
 # Uninstallation
@@ -140,28 +138,24 @@ after_migrate = [
 # Hook on document methods and events
 
 doc_events = {
-    # "*": {
-    # 	"on_update": "method",
-    # 	"on_cancel": "method",
-    # 	"on_trash": "method"
-    # }
-    "Sales Invoice": {
-        "before_save": "tims_tevin_typec_integration.tims_tevin_type_c_integration.overrides.server.sales_invoice.before_save",
-        "on_submit": "tims_tevin_typec_integration.tims_tevin_type_c_integration.overrides.server.sales_invoice.on_submit",
-        "before_cancel": "tims_tevin_typec_integration.tims_tevin_type_c_integration.overrides.server.sales_invoice.before_cancel",
-    },
+	# "*": {
+	# 	"on_update": "method",
+	# 	"on_cancel": "method",
+	# 	"on_trash": "method"
+	# }
+	"Sales Invoice": {
+		"before_save": "tims_tevin_typec_integration.tims_tevin_type_c_integration.overrides.server.sales_invoice.before_save",
+		"on_submit": "tims_tevin_typec_integration.tims_tevin_type_c_integration.overrides.server.sales_invoice.on_submit",
+		"before_cancel": "tims_tevin_typec_integration.tims_tevin_type_c_integration.overrides.server.sales_invoice.before_cancel",
+	},
 }
 
 # Scheduled Tasks
 # ---------------
 
 scheduler_events = {
-    "all": [
-        "tims_tevin_typec_integration.tims_tevin_type_c_integration.tasks.tasks.resend_invoices"
-    ],
-    "daily": [
-        "tims_tevin_typec_integration.tims_tevin_type_c_integration.tasks.tasks.get_eod_records"
-    ],
+	"all": ["tims_tevin_typec_integration.tims_tevin_type_c_integration.tasks.tasks.resend_invoices"],
+	"daily": ["tims_tevin_typec_integration.tims_tevin_type_c_integration.tasks.tasks.get_eod_records"],
 }
 
 # Testing
