@@ -91,11 +91,12 @@ jobs:
       - name: Install
         working-directory: /home/runner/frappe-bench
         run: |
+          bench get-app --branch version-16 payments
           bench get-app --branch version-16 erpnext
           bench get-app tims_tevin_typec_integration $GITHUB_WORKSPACE
           bench setup requirements --dev
           bench new-site --db-root-password root --mariadb-user-host-login-scope='%' --admin-password admin test_site
-          bench --site test_site install-app erpnext tims_tevin_typec_integration
+          bench --site test_site install-app payments erpnext tims_tevin_typec_integration
           bench build
         env:
           CI: 'Yes'
